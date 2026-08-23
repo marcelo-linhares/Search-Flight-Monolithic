@@ -1,0 +1,37 @@
+# dependências
+node_modules/
+
+# ambiente
+.env
+.env.local
+.env.*.local
+
+# testes e cobertura
+coverage/
+.nyc_output/
+
+# logs
+*.log
+logs/
+
+# build (quando adicionar TS ou bundler)
+dist/
+build/
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+
+# arquivos temporários do projeto
+filesBL/              # migrar para src/ antes de deletar
+files.zip
+filesBL.zip
+*.zip
