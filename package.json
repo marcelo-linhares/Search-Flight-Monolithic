@@ -7,7 +7,12 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "test":             "jest --selectProjects unit integration",
+  "test:unit":        "jest --selectProjects unit --watch",
+  "test:integration": "jest --selectProjects integration",
+  "test:stage":       "jest --selectProjects stage",
+  "test:all":         "jest",
+  "test:coverage":    "jest --selectProjects unit integration --coverage"
   },
   "keywords": [],
   "author": "",
