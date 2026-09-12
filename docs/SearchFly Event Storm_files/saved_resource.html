@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<!-- saved from url=(0253)https://0d7c85c0-5c2a-4c98-97cb-c829897ce785.frame.claudeusercontent.com/_f/1788209619-944a/?__frame_t=sfGJiJb0flblI1M8VVw-mFuG.225a0d24-1de3-47a1-940b-1002f211456c.e05fcfdc-9102-4aa4-9862-91a144544364.1788232571&__frame_v=manifest.aecc8e7118d82208.json -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!-- frame-runtime --><script>window.__FRAME_PREAMBLE={"v":1,"capabilities":{"artifact":"artifact.DF6_9MzE.js","assets":"assets.8Gk803W0.js","comments":"comments.vw5vQdGA.js","db":"db.h-3sndFg.js","downloads":"downloads.C3GSvEDP.js","embed":"embed.CxGAyc-v.js","mcp":"mcp.Bvma3qD7.js","network":"network.B5UA9Su4.js","notifications":"notifications.ssU4jy7G.js","permissions":"permissions.BNySkLV5.js","room":"room.BMMoe2BY.js","sample":"sample.BW2Uysoh.js","self":"artifact.DF6_9MzE.js","user":"user.BpKav-Rf.js"},"transforms":"_transforms.DSB5x63f.js","comments":"_comments.C6E0cR5g.js","translate":"_translate.5HCW4BJh.js"}</script><script>(function(){"use strict";var te=["light","dark","system"],re=/^[A-Za-z0-9_-]{1,64}$/,$=/^[a-zA-Z_:][a-zA-Z0-9_:.-]{0,127}$/,ne=new Set(["class","hidden","value","checked","style","title","alt","placeholder","lang","dir","role","tabindex","disabled","readonly","contenteditable","open","colspan","rowspan"]);function oe(e){const t=e.toLowerCase();return t.startsWith("data-")||t.startsWith("aria-")||ne.has(t)}var Be="http://www.w3.org/1999/xhtml",se="http://www.w3.org/2000/svg",ae=new Set(["script","style","iframe","noscript","noframes","noembed","xmp","plaintext","template","title","textarea","object","embed"]),ie=new Set(["script","style"]);function ce(e){const t=e.localName.toLowerCase();return e.namespaceURI==="http://www.w3.org/1999/xhtml"?!ae.has(t):e.namespaceURI===se?!ie.has(t):!1}function M(e,t){return e===t||(e===160||e===32)&&(t===160||t===32)}function le(e,t){const r=e.length,n=t.length;let s=0;for(;s<r&&s<n&&M(e.charCodeAt(s),t.charCodeAt(s));)s++;let o=0;for(;o<r-s&&o<n-s&&M(e.charCodeAt(r-1-o),t.charCodeAt(n-1-o));)o++;return{p:s,s:o}}function ue(e,t){const r=e.firstChild;if(e.childNodes.length!==1||r===null||r.nodeType!==Node.TEXT_NODE){e.textContent=t;return}const n=r.data,s=n.length,o=t.length,{p:i,s:c}=le(n,t);i===s&&c===0&&s===o||r.replaceData(i,s-i-c,t.slice(i,o-c));const h=r.data,p=e.ownerDocument.getSelection?.()??null,w=p!==null&&p.rangeCount>0&&(p.anchorNode===r||p.focusNode===r)?{anchor:p.anchorNode,anchorOffset:p.anchorOffset,focus:p.focusNode,focusOffset:p.focusOffset}:null;let m=-1,g=-1;for(let f=0;f<h.length&&f<t.length;f++){const v=h.charCodeAt(f),b=t.charCodeAt(f);v!==b&&M(v,b)&&(m<0&&(m=f),g=f)}const a=m>=0;if(a&&r.replaceData(m,g-m+1,t.slice(m,g+1)),a&&w!==null&&w.anchor!==null&&w.focus!==null)try{p.setBaseAndExtent(w.anchor,w.anchorOffset,w.focus,w.focusOffset)}catch{}}var fe=new Set(["html","head","body","frameset"]);function de(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&fe.has(e.localName)}function pe(e){if(e===null||typeof e!="object")return!1;const t=e;if(typeof t.target!="string"||!re.test(t.target)||t.text!==void 0&&typeof t.text!="string")return!1;if(t.attrsSet!==void 0){if(t.attrsSet===null||typeof t.attrsSet!="object")return!1;for(const[r,n]of Object.entries(t.attrsSet))if(!$.test(r)||typeof n!="string")return!1}if(t.attrsRemoved!==void 0){if(!Array.isArray(t.attrsRemoved))return!1;for(const r of t.attrsRemoved)if(typeof r!="string"||!$.test(r))return!1}return!0}function me(e,t){if(e===null||typeof e!="object")return!1;const{seq:r,elements:n}=e;if(typeof r!="number"||!Number.isSafeInteger(r)||!Array.isArray(n)||n.length===0||n.length>64)return!1;for(let s=0;s<n.length;s++)if(!t(n[s]))return!1;return!0}function he(e){return e===null||typeof e!="object"?!1:me(e.__frame_patch,pe)}function _e(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_init;return t!==null&&typeof t=="object"}function ve(e){return e!==null&&typeof e=="object"&&e.__frame_size_poke===!0}function ye(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_theme;if(t===null||typeof t!="object")return!1;const r=t.theme;return typeof r=="string"&&te.includes(r)}var A=/^[\w.-]+\.js$/;function we(e,t,r){return r?"inert":typeof t=="string"&&A.test(t)?e?[t]:"inert":e?"inert":"framed"}function ge(){return{post(e,t){parent.postMessage(e,t)},on(e){const t=r=>{r.source===parent&&e(r.data,r.origin,r.isTrusted)};return addEventListener("message",t),()=>removeEventListener("message",t)}}}function be(){return{post:()=>{},on:()=>()=>{}}}var j="__frame_scroll",Ee=150,Ae=310,Se=160,Te=3e4;function ke(){let e=0,t=!1,r=!1,n=!1,s=0,o=null;const i=l=>{try{sessionStorage.setItem(j,JSON.stringify({y:l}))}catch{}},c=()=>{if(clearTimeout(e),o===null)return;const l=o;o=null,i(l)},h=()=>{if(t){t=!1;return}r=!0,o=scrollY,clearTimeout(e),e=setTimeout(c,Ee)};try{addEventListener("scroll",h,{passive:!0}),addEventListener("pagehide",c)}catch{}const p=()=>{let l;try{l=sessionStorage.getItem(j)}catch{return null}if(l===null)return null;let _;try{_=JSON.parse(l)}catch{_=null}const d=_?.y;if(!(typeof d=="number"&&Number.isFinite(d)&&d>=0)){try{sessionStorage.removeItem(j)}catch{}return null}return d};let w=!1;const m=l=>{try{const _=scrollY;scrollTo({top:l,left:0,behavior:"instant"}),s=l,n=!0,clearTimeout(e),o=null,i(l);const d=scrollY;d!==_&&(t=!0),d!==l&&!w&&(w=!0,addEventListener("load",()=>{try{if(scrollY===d){const T=p();m(T!==null?T:s)}}catch{}},{once:!0}))}catch{}},g=()=>{try{return!!location.hash}catch{return!0}};let a=!1;const f=()=>{try{if(a||innerWidth>Ae||innerHeight>Se)return;a=!0;const l=Date.now(),_=()=>{try{removeEventListener("resize",_)}catch{}if(Date.now()-l>Te||r||g())return;const d=p();m(d!==null?d:s)};addEventListener("resize",_)}catch{}};let v=!1,b=!1;return{restore(){if(v||(v=!0,g()))return;const l=p();l!==null&&(m(l),f())},promoted(){if(b||(b=!0,g()))return;const l=p();l!==null?(m(l),f()):n&&m(s)}}}function Re(e,t,r,n){let s=null;try{s=window.trustedTypes?.createPolicy("frame-runtime",{createScriptURL:h=>h})??null}catch{}const o=window.Worker,i=o?.prototype,c=Object.freeze({Worker:o,workerOn:i?.addEventListener,workerPost:i?.postMessage,workerTerminate:i?.terminate,fetch:window.fetch.bind(window),preventDefault:Event.prototype.preventDefault,policy:s,origins:t});r(e).then(h=>h?.bootTopLevel?h.bootTopLevel(c,n):n.settle()).catch(()=>n.settle())}var De="modulepreload",Ie=function(e){return"/"+e},Ue={},Le=function(t,r,n){let s=Promise.resolve();function o(i){const c=new Event("vite:preloadError",{cancelable:!0});if(c.payload=i,window.dispatchEvent(c),!c.defaultPrevented)throw i}return s.then(i=>{for(const c of i||[])c.status==="rejected"&&o(c.reason);return t().catch(o)})},Oe=window===top,q=Object.getOwnPropertyDescriptor(window,"claude"),k=we(Oe,window.__FRAME_PREAMBLE?.topLevel,q?.writable===!1),N=typeof k=="object"&&k[0],y=N?be():ge();(function(){const e=Object.defineProperty,t=globalThis,r=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let n=0;for(let s=0;s<r.length;s++){const o=r[s];try{e(t,o,{value:void 0,writable:!1,configurable:!1})}catch{try{delete t[o]}catch{}try{e(t,o,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof t[o]=="function"&&n++}if(n&&k==="framed")try{y.post({__frame_rtc_lockdown_failed:n},"*")}catch{}})();var Pe=1e4,Y=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function X(e){for(const t of Y)if(t.endsWith(":*"))try{const r=new URL(e);if(`${r.protocol}//${r.hostname}:*`===t)return!0}catch{}else if(e===t)return!0;return!1}var R=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),B=window.__FRAME_PREAMBLE?.transforms,D=window.__FRAME_PREAMBLE?.comments,I=window.__FRAME_PREAMBLE?.translate;function S(e){return Le(()=>import("/_runtime/"+e),void 0)}function G(e,t){return{contract:e.contract,changes:new Set(e.changes??[]),flags:new Set(e.flags??[]),capabilities:e.capabilities??{},capBudgets:e.capBudgets??{},transforms:new Map,shellOrigin:t,mount:x,hooks:O,pipe:()=>({wrap:(r,n)=>(...s)=>{try{return n(...s)}catch(o){return Promise.reject(o)}}})}}var L=null,E=null;function V(e,t,r){try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var U=!1,O={editBefore:null,edit:null};function Ce(e,t,r=!1){const n=[];let s;if(r)try{O.editBefore?.(e)}catch{}for(const o of e.elements){const i=document.querySelector(`[data-id="${o.target}"]`);if(!i){s=o.target;break}if([...Object.keys(o.attrsSet??{}),...o.attrsRemoved??[]].some(c=>!oe(c))){s=o.target;break}if(o.text!==void 0&&(!ce(i)||de(i))){s=o.target;break}for(const[c,h]of Object.entries(o.attrsSet??{}))if(!J(i,c)){try{i.setAttribute(c,h)}catch{}Z(i,c,h)}for(const c of o.attrsRemoved??[])J(i,c)||(i.removeAttribute(c),Z(i,c,null));typeof o.text=="string"&&ue(i,o.text),n.push(o.target)}if(r)try{O.edit?.(e.seq,n,s)}catch{}if(s!==void 0){y.post({__frame_patch_miss:{seq:e.seq}},t);return}try{document.dispatchEvent(new CustomEvent("claude:edit",{detail:{seq:e.seq,targets:n}}))}catch{}}function Z(e,t,r){if(!(e instanceof HTMLInputElement))return;const n=t.toLowerCase();n==="checked"?e.checked=r!==null:n==="value"&&e.type!=="file"&&(e.value=r??"")}function J(e,t){const r=t.toLowerCase(),n=e;return r==="data-id"||(r==="value"||r==="checked")&&(n.__artifactSecret===!0||/^(password|hidden|file)$/.test(n.type??"")||/(^|\s)(cc-|one-time-code|current-password|new-password)/i.test(`${e.getAttribute("autocomplete")??""} ${n.autocomplete??""}`))}function Q(e){const t=document.documentElement;e==="light"||e==="dark"?(t.dataset.theme=e,t.style.colorScheme=e,U=!0):U&&(delete t.dataset.theme,t.style.colorScheme="",U=!1)}var P=new Map;function Me(){let e;const t={u:new Promise(r=>{e=r}),r:r=>{t.done=!0,e(r)},done:!1,nulled:!1};return t}function F(){for(const e of P.values())e.done||(e.nulled=!0,e.r(null))}var je=Object.freeze(Object.assign(Object.create(null),{call:Function.prototype.call,apply:Function.prototype.apply,bind:Function.prototype.bind})),x=(e,t)=>{const r=P.get(e);if(!r||r.done){r?.nulled&&E&&y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:e}},E);return}const n=typeof t=="function"?Object.setPrototypeOf(t,je):Object.assign(Object.create(null),t);typeof n.then=="function"&&delete n.then,r.r(Object.freeze(n))};function ee(){const e=q?.value??{};V(window,"claude",e);for(const t of Object.keys(R)){if(e[t]!==void 0){V(e,t,e[t]);continue}P.set(t,Me())}if(e.use===void 0){const t=r=>{if(typeof r!="string"||!Object.hasOwn(R,r))return Promise.resolve(null);const n=P.get(r);return n?n.u:Promise.resolve(e[r]??null)};try{Object.defineProperty(e,"use",{value:t,writable:!0,configurable:!0,enumerable:!1})}catch{}}}if(k==="framed"){const e=B&&A.test(B)?S(B).catch(()=>{}):Promise.resolve(void 0),t=a=>{if(a.type==="auxclick"&&a.button!==1)return;const f=a.target,v=f&&f.closest?f.closest("a[href],area[href]"):null;if(!v)return;const b=v.getAttribute("href");if(!b)return;let l;try{l=new URL(b,document.baseURI)}catch{return}if((l.protocol==="http:"||l.protocol==="https:")&&l.origin!==location.origin){a.preventDefault();const _=(v.getAttribute("target")??"").toLowerCase(),d=a.type==="auxclick"||a.metaKey||a.ctrlKey||a.shiftKey||a.altKey||!["","_self","_top","_parent"].includes(_);y.post({__frame_nav:!0,url:l.href,newTab:d},"*")}};addEventListener("click",t,!0),addEventListener("auxclick",t,!0);const r={},n=a=>{a.isTrusted&&(r.pointer=!0)},s=a=>{a.isTrusted&&(r.click=!0)};addEventListener("pointermove",n,{capture:!0,passive:!0}),addEventListener("click",s,{capture:!0,passive:!0}),e.then(a=>{a?.wireNav&&(a.wireNav(),removeEventListener("click",t,!0),removeEventListener("auxclick",t,!0),removeEventListener("pointermove",n,!0),removeEventListener("click",s,!0),a.wireEngagement?.(r))});let o=null;try{o=ke()}catch{}ee();let i=null,c=null,h=0;const p=y.on((a,f)=>{X(f)&&_e(a)&&(i=a.__frame_init,E=f,p(),clearTimeout(h),c?.())});y.post({__frame_connect:!0},"*");const w=new Promise(a=>{c=a,h=setTimeout(()=>{p(),a()},Pe)}),m=document.readyState==="loading"?new Promise(a=>document.addEventListener("DOMContentLoaded",()=>a(),{once:!0})):Promise.resolve();m.then(()=>{try{o?.restore()}catch{}});const g={cb:null};y.on((a,f)=>{if(X(f)&&ve(a)){try{o?.promoted()}catch{}g.cb?.()}}),w.then(async()=>{if(!i||!E){F();return}Q(i.theme);const a=E;let f=!1,v=!1;y.on((u,z,C)=>{if(z!==a)return;ye(u)&&Q(u.__frame_theme.theme),he(u)&&Ce(u.__frame_patch,a,C);const H=u?.__fc_mode;H&&typeof H=="object"&&!f&&D&&A.test(D)&&(f=!0,S(D).then(K=>K.install?.(a,H.on===!0)).catch(()=>{}));const W=u?.__ft_cmd;W&&typeof W=="object"&&!v&&I&&A.test(I)&&(v=!0,S(I).then(K=>K.install?.(a,W)).catch(()=>{}))});const b=Object.keys(i.capabilities??{}).filter(u=>Object.hasOwn(R,u)).map(u=>[u,R[u]]).filter(u=>typeof u[1]=="string"&&A.test(u[1])),l=await Promise.allSettled(b.map(([,u])=>S(u))),_=await e,d=E;if(_?.buildBoot||y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},d),_?.buildBoot)try{L=_.buildBoot(i,_.TRANSFORMS??{},{shellOrigin:d,mount:x,hooks:O},u=>y.post({__frame_cap_telemetry:u},d))}catch{y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},d),L=G(i,d)}else L=G(i,d);const T=u=>y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:u}},d),Ne=L;l.forEach((u,z)=>{const C=b[z][0];if(u.status!=="fulfilled"){T(C);return}try{u.value?.install?.(Ne)}catch{T(C)}}),F(),await m,y.post({__frame_ready:!0},E),e.then(u=>u?.installSizeReporter?.(d,g))})}else N&&(ee(),Re(N,Y,S,{settle:F,mount:x}))})();</script><!-- /frame-runtime --><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>SearchFly Event Storm</title>
+<link rel="stylesheet" href="./css2">
+
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:        #080B11;
+  --canvas:    #0F1420;
+  --surface:   #161C2C;
+  --surface-2: #1E2638;
+  --border:    #29304A;
+  --text:      #C8D4E8;
+  --muted:     #5A6780;
+  --accent:    #8B5CF6;
+  --accent-dim: rgba(139,92,246,.15);
+
+  /* sticky palettes (bg / text) */
+  --ev-bg:    #F97316; --ev-tx:  #0D0500;  /* domain events */
+  --cmd-bg:   #3B82F6; --cmd-tx: #020C1E;  /* commands */
+  --agg-bg:   #FACC15; --agg-tx: #110C00;  /* aggregates */
+  --ext-bg:   #EC4899; --ext-tx: #1A0010;  /* external systems */
+  --act-bg:   #22C55E; --act-tx: #001A09;  /* actors */
+  --rm-bg:    #06B6D4; --rm-tx:  #001218;  /* read models */
+  --pol-bg:   #A78BFA; --pol-tx: #08001E;  /* policies */
+
+  --ctx-colors: #8B5CF6, #3B82F6, #22C55E, #F97316, #EC4899, #FACC15;
+
+  --r: 6px;
+  --r-sm: 4px;
+  --shadow: 0 4px 14px rgba(0,0,0,.45);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:        #EEF1F8;
+    --canvas:    #E4E9F4;
+    --surface:   #FFFFFF;
+    --surface-2: #F0F3FA;
+    --border:    #CDD4E8;
+    --text:      #1A2038;
+    --muted:     #7888A8;
+    --accent:    #6D28D9;
+    --accent-dim: rgba(109,40,217,.10);
+  }
+}
+:root[data-theme="light"] {
+  --bg:#EEF1F8;--canvas:#E4E9F4;--surface:#FFFFFF;--surface-2:#F0F3FA;
+  --border:#CDD4E8;--text:#1A2038;--muted:#7888A8;
+  --accent:#6D28D9;--accent-dim:rgba(109,40,217,.10);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.page { max-width: 1400px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+
+/* ── HEADER ── */
+.header { margin-bottom: 2.5rem; }
+.header-tag {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent); background: var(--accent-dim);
+  border: 1px solid rgba(139,92,246,.3);
+  padding: 0.2rem 0.65rem; border-radius: 100px; margin-bottom: 1rem;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+h1 {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.05; text-wrap: balance;
+  color: var(--text);
+  letter-spacing: -.02em;
+}
+h1 span { color: var(--accent); }
+.subtitle {
+  margin-top: .75rem; font-size: 1rem; color: var(--muted); max-width: 56ch;
+}
+.meta {
+  display: flex; gap: 1.5rem; margin-top: 1.25rem; flex-wrap: wrap;
+}
+.meta-item {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  color: var(--muted); letter-spacing: .04em;
+}
+.meta-item strong { color: var(--text); font-weight: 500; }
+
+/* ── TWO-COL INFO ROW ── */
+.info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
+@media(max-width:760px){ .info-row { grid-template-columns: 1fr; } }
+
+/* ── AGENTS ── */
+.agents-section h2, .prep-section h2, .legend-section h2 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.8rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 1rem;
+}
+.agents-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+.agent-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1rem 1.1rem;
+  display: flex; gap: 1rem; align-items: flex-start;
+  transition: border-color .2s;
+}
+.agent-card:hover { border-color: var(--accent); }
+.agent-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.agent-info h3 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+  color: var(--text); line-height: 1.2;
+}
+.agent-role {
+  font-size: .72rem; font-family: 'JetBrains Mono', monospace;
+  color: var(--accent); margin-top: .1rem;
+}
+.agent-scope { font-size: .8rem; color: var(--muted); margin-top: .35rem; }
+
+/* ── PREP CHECKLIST ── */
+.prep-section { }
+.prep-list { display: flex; flex-direction: column; gap: .5rem; }
+.prep-item {
+  display: flex; gap: .75rem; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: .7rem 1rem;
+  font-size: .85rem;
+}
+.prep-check {
+  width: 18px; height: 18px; border-radius: 4px;
+  border: 2px solid var(--border); flex-shrink: 0;
+  margin-top: .1rem; cursor: pointer; appearance: none;
+  background: transparent; transition: all .15s;
+}
+.prep-check:checked {
+  background: var(--accent); border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l3 3 5-6' stroke='%23fff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center; background-size: 60%;
+}
+.prep-label { flex: 1; }
+.prep-label strong { display: block; color: var(--text); font-weight: 500; margin-bottom: .1rem; }
+.prep-label span { color: var(--muted); font-size: .78rem; }
+
+/* ── LEGEND ── */
+.legend-section { margin-bottom: 2rem; }
+.legend-items { display: flex; flex-wrap: wrap; gap: .5rem; }
+.legend-item {
+  display: flex; align-items: center; gap: .4rem;
+  font-family: 'JetBrains Mono', monospace; font-size: .68rem;
+  color: var(--muted);
+}
+.chip {
+  padding: .18rem .55rem; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+  font-weight: 500; letter-spacing: .02em;
+}
+.chip.ev  { background: var(--ev-bg);  color: var(--ev-tx); }
+.chip.cmd { background: var(--cmd-bg); color: var(--cmd-tx); }
+.chip.agg { background: var(--agg-bg); color: var(--agg-tx); }
+.chip.ext { background: var(--ext-bg); color: var(--ext-tx); }
+.chip.act { background: var(--act-bg); color: var(--act-tx); }
+.chip.pol { background: var(--pol-bg); color: var(--pol-tx); }
+.chip.rm  { background: var(--rm-bg);  color: var(--rm-tx); }
+
+/* ── BOARD ── */
+.board-wrapper {
+  overflow-x: auto; border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--canvas);
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+  scrollbar-color: var(--border) transparent;
+}
+.board-wrapper::-webkit-scrollbar { height: 6px; }
+.board-wrapper::-webkit-scrollbar-track { background: transparent; }
+.board-wrapper::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.board {
+  display: grid;
+  grid-template-columns: 148px repeat(6, 1fr);
+  min-width: 960px;
+  gap: 0;
+}
+
+/* Phase header row */
+.phase-label {
+  background: transparent; border-bottom: 1px solid var(--border);
+  padding: .5rem .75rem;
+  font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center;
+}
+.phase-label.ctx-header { color: transparent; }
+.phase-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--surface-2); font-size: .6rem;
+  color: var(--muted); margin-right: .4rem; flex-shrink: 0;
+}
+
+/* Context row */
+.ctx-row {
+  display: contents;
+}
+.ctx-label {
+  padding: .6rem .75rem; border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .73rem; font-weight: 500; color: var(--text);
+  min-height: 90px;
+}
+.ctx-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ctx-cell {
+  padding: .5rem .6rem; border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: .35rem; justify-content: center;
+}
+.ctx-cell:last-child { border-right: none; }
+.ctx-label:last-of-type { }
+
+/* Sticky notes */
+.sticky {
+  border-radius: 3px; padding: .3rem .55rem;
+  font-family: 'JetBrains Mono', monospace; font-size: .62rem;
+  font-weight: 500; line-height: 1.3;
+  box-shadow: var(--shadow);
+  display: inline-block; width: 100%;
+}
+.sticky.ev  { background: var(--ev-bg);  color: var(--ev-tx); }
+.sticky.cmd { background: var(--cmd-bg); color: var(--cmd-tx); }
+.sticky.agg { background: var(--agg-bg); color: var(--agg-tx); }
+.sticky.ext { background: var(--ext-bg); color: var(--ext-tx); }
+.sticky.act { background: var(--act-bg); color: var(--act-tx); }
+.sticky.pol { background: var(--pol-bg); color: var(--pol-tx); }
+.sticky.rm  { background: var(--rm-bg);  color: var(--rm-tx); }
+
+/* Arrows between phases */
+.flow-arrows {
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: .75rem;
+  gap: .5rem; flex-wrap: wrap;
+}
+.arrow {
+  display: flex; align-items: center; gap: .3rem;
+  font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--muted);
+}
+.arrow::after { content: '→'; color: var(--accent); }
+.arrow:last-child::after { content: ''; }
+
+/* ── AGENDA ── */
+.agenda-section h2 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .8rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 1rem;
+}
+.agenda { display: flex; flex-direction: column; gap: 0; position: relative; }
+.agenda::before {
+  content: ''; position: absolute; left: 40px; top: 0; bottom: 0;
+  width: 1px; background: var(--border);
+}
+.agenda-item {
+  display: flex; gap: 1.5rem; align-items: flex-start;
+  padding: .75rem 0 .75rem 0; position: relative;
+}
+.agenda-time {
+  font-family: 'JetBrains Mono', monospace; font-size: .68rem;
+  color: var(--muted); min-width: 52px; text-align: right;
+  margin-top: .15rem;
+}
+.agenda-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--border);
+  flex-shrink: 0; margin-top: .25rem; z-index: 1;
+  transition: border-color .2s;
+}
+.agenda-item:hover .agenda-dot { border-color: var(--accent); }
+.agenda-body h4 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .88rem;
+  color: var(--text); line-height: 1.2;
+}
+.agenda-body p { font-size: .8rem; color: var(--muted); margin-top: .2rem; }
+.agenda-tag {
+  display: inline-block; font-family: 'JetBrains Mono', monospace;
+  font-size: .6rem; letter-spacing: .06em; text-transform: uppercase;
+  padding: .1rem .4rem; border-radius: 3px; margin-top: .35rem;
+}
+.agenda-tag.open    { background: rgba(34,197,94,.15); color: #22C55E; }
+.agenda-tag.storm   { background: rgba(249,115,22,.15); color: #F97316; }
+.agenda-tag.review  { background: rgba(139,92,246,.15); color: #8B5CF6; }
+.agenda-tag.close   { background: rgba(6,182,212,.15);  color: #06B6D4; }
+
+/* ── QUESTIONS PANEL ── */
+.questions-section { margin-top: 2.5rem; }
+.questions-section h2 {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .8rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 1rem;
+}
+.questions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.question-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.1rem 1.2rem;
+  border-left: 3px solid;
+}
+.question-card.biz  { border-left-color: #22C55E; }
+.question-card.ddd  { border-left-color: #8B5CF6; }
+.question-card.tech { border-left-color: #3B82F6; }
+.question-card .from {
+  font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  margin-bottom: .5rem;
+}
+.question-card.biz  .from { color: #22C55E; }
+.question-card.ddd  .from { color: #8B5CF6; }
+.question-card.tech .from { color: #3B82F6; }
+.question-card p { font-size: .83rem; color: var(--text); line-height: 1.5; }
+
+/* divider */
+hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+</style>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-tag"><span class="dot"></span> Session Live</div>
+    <h1>SearchFly <span>Event Storm</span></h1>
+    <p class="subtitle">A collaborative domain discovery session for the SearchFly monolith — mapping domain events, commands, and bounded context boundaries across the full flight-tracking flow.</p>
+    <div class="meta">
+      <div class="meta-item">Project <strong>SearchFly TCC</strong></div>
+      <div class="meta-item">Architecture <strong>DDD Monolith</strong></div>
+      <div class="meta-item">Contexts <strong>7 Bounded Contexts</strong></div>
+      <div class="meta-item">Agents <strong>3 Domain Experts</strong></div>
+    </div>
+  </header>
+
+  <!-- INFO ROW: AGENTS + PREP -->
+  <div class="info-row">
+    <!-- AGENTS -->
+    <section class="agents-section">
+      <h2>Session Agents</h2>
+      <div class="agents-grid">
+        <div class="agent-card">
+          <div class="agent-avatar" style="background:rgba(34,197,94,.15);">✈️</div>
+          <div class="agent-info">
+            <h3>Ana Rocha</h3>
+            <div class="agent-role">Business Domain Expert</div>
+            <p class="agent-scope">Represents the traveler &amp; travel agency perspective. Challenges the domain model from a real-world use-case angle — edge cases in pricing, notification fatigue, multi-trip scenarios.</p>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-avatar" style="background:rgba(139,92,246,.15);">🏛️</div>
+          <div class="agent-info">
+            <h3>Marcus Vidal</h3>
+            <div class="agent-role">DDD Architect</div>
+            <p class="agent-scope">Validates aggregate roots, invariants, and context boundaries. Will question whether the right things are entities vs. value objects and whether context coupling is clean.</p>
+          </div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-avatar" style="background:rgba(59,130,246,.15);">⚙️</div>
+          <div class="agent-info">
+            <h3>Lena Osei</h3>
+            <div class="agent-role">Platform Engineer</div>
+            <p class="agent-scope">Focuses on the in-process event bus, retry logic, test strategy, and how the Node.js implementation maps to the DDD model. Catches what the theory misses.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PREP CHECKLIST -->
+    <section class="prep-section">
+      <h2>What You Need to Prepare</h2>
+      <div class="prep-list">
+        <label class="prep-item">
+          <input type="checkbox" class="prep-check">
+          <div class="prep-label">
+            <strong>Print or open your Bounded Context map</strong>
+            <span>The BoundedContext.png from this project — pin it on a second screen or print A3. You'll reference it constantly.</span>
+          </div>
+        </label>
+        <label class="prep-item">
+          <input type="checkbox" class="prep-check">
+          <div class="prep-label">
+            <strong>Open your current handler.js and domain file</strong>
+            <span>So agents can challenge where events actually live vs. where the model says they should.</span>
+          </div>
+        </label>
+        <label class="prep-item">
+          <input type="checkbox" class="prep-check">
+          <div class="prep-label">
+            <strong>List 3 real user scenarios</strong>
+            <span>e.g. "I set a watch, prices drop in 2 hrs, I get notified, I run out of credits." Real scenarios reveal missing events.</span>
+          </div>
+        </label>
+        <label class="prep-item">
+          <input type="checkbox" class="prep-check">
+          <div class="prep-label">
+            <strong>Write down your biggest current doubt</strong>
+            <span>What's the one thing in the implementation that doesn't feel clean? Start the session with that.</span>
+          </div>
+        </label>
+        <label class="prep-item">
+          <input type="checkbox" class="prep-check">
+          <div class="prep-label">
+            <strong>Confirm Amadeus / Duffel API contracts</strong>
+            <span>The anti-corruption layer in Integration is only valid if you know the real API response shapes.</span>
+          </div>
+        </label>
+        <label class="prep-item">
+          <input type="checkbox" class="prep-check">
+          <div class="prep-label">
+            <strong>Note which events you've actually implemented</strong>
+            <span>Mark the events in the board below that exist today vs. those that are still design-only.</span>
+          </div>
+        </label>
+      </div>
+    </section>
+  </div>
+
+  <!-- LEGEND -->
+  <section class="legend-section">
+    <h2>Notation</h2>
+    <div class="legend-items">
+      <div class="legend-item"><span class="chip ev">DomainEvent</span> Something that happened — past tense, immutable</div>
+      <div class="legend-item"><span class="chip cmd">Command</span> Intent to change state — may be rejected</div>
+      <div class="legend-item"><span class="chip agg">Aggregate</span> Consistency boundary — owns invariants</div>
+      <div class="legend-item"><span class="chip act">Actor</span> User or system role that issues commands</div>
+      <div class="legend-item"><span class="chip ext">External</span> Third-party system outside your domain</div>
+      <div class="legend-item"><span class="chip pol">Policy</span> "When X, then Y" — automated reaction</div>
+      <div class="legend-item"><span class="chip rm">ReadModel</span> Query-side projection — no writes</div>
+    </div>
+  </section>
+
+  <!-- FLOW BOARD -->
+  <section>
+    <h2 style="font-family:&#39;Syne&#39;,sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Domain Event Timeline</h2>
+
+    <div class="board-wrapper">
+      <div class="board">
+
+        <!-- HEADER ROW -->
+        <div class="phase-label ctx-header">Context</div>
+        <div class="phase-label"><span class="phase-num">1</span>Watch Setup</div>
+        <div class="phase-label"><span class="phase-num">2</span>Job Scheduling</div>
+        <div class="phase-label"><span class="phase-num">3</span>Flight Search</div>
+        <div class="phase-label"><span class="phase-num">4</span>Price Analysis</div>
+        <div class="phase-label"><span class="phase-num">5</span>Notification</div>
+        <div class="phase-label"><span class="phase-num">6</span>Credit Flow</div>
+
+        <!-- WATCH MANAGEMENT -->
+        <div class="ctx-label">
+          <span class="ctx-dot" style="background:#22C55E"></span>
+          Watch Mgmt
+        </div>
+        <div class="ctx-cell">
+          <div class="sticky act">User / Traveler</div>
+          <div class="sticky cmd">CreateWatchRequest</div>
+          <div class="sticky ev">WatchRequestCreated</div>
+          <div class="sticky agg">WatchRequest</div>
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell">
+          <div class="sticky pol">When CreditsExhausted → SuspendWatch</div>
+          <div class="sticky ev">WatchSuspended</div>
+          <div class="sticky ev">WatchResumed</div>
+        </div>
+
+        <!-- SCHEDULER -->
+        <div class="ctx-label">
+          <span class="ctx-dot" style="background:#F97316"></span>
+          Scheduler
+        </div>
+        <div class="ctx-cell">
+          <div class="sticky pol">When WatchRequestCreated → RegisterPolicy</div>
+          <div class="sticky agg">SearchPolicy</div>
+        </div>
+        <div class="ctx-cell">
+          <div class="sticky act">Cron (System)</div>
+          <div class="sticky cmd">TriggerSearchJob</div>
+          <div class="sticky ev">SearchJobTriggered</div>
+          <div class="sticky agg">SearchJob</div>
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+
+        <!-- INTEGRATION -->
+        <div class="ctx-label">
+          <span class="ctx-dot" style="background:#06B6D4"></span>
+          Integration
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell">
+          <div class="sticky cmd">ExecuteFlightSearch</div>
+          <div class="sticky ext">Amadeus API</div>
+          <div class="sticky ext">Duffel API</div>
+          <div class="sticky ev">SearchJobCompleted</div>
+          <div class="sticky ev">SearchJobFailed</div>
+          <div class="sticky rm">FlightPort (ACL)</div>
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+
+        <!-- PRICING -->
+        <div class="ctx-label">
+          <span class="ctx-dot" style="background:#FACC15"></span>
+          Pricing
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell">
+          <div class="sticky pol">When SearchJobCompleted → AnalyzePrice</div>
+          <div class="sticky cmd">DetectPriceDrop</div>
+          <div class="sticky ev">PriceSnapshotCaptured</div>
+          <div class="sticky ev">PriceDropDetected</div>
+          <div class="sticky ev">PriceStable</div>
+          <div class="sticky agg">PriceSnapshot</div>
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+
+        <!-- NOTIFICATION -->
+        <div class="ctx-label">
+          <span class="ctx-dot" style="background:#EC4899"></span>
+          Notification
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell">
+          <div class="sticky pol">When PriceDropDetected → SendAlert</div>
+          <div class="sticky cmd">SendAlert</div>
+          <div class="sticky ext">Email Provider</div>
+          <div class="sticky ext">Push (FCM)</div>
+          <div class="sticky ev">AlertSent</div>
+          <div class="sticky ev">AlertFailed</div>
+          <div class="sticky agg">Alert</div>
+        </div>
+        <div class="ctx-cell"></div>
+
+        <!-- BILLING -->
+        <div class="ctx-label">
+          <span class="ctx-dot" style="background:#8B5CF6"></span>
+          Billing
+        </div>
+        <div class="ctx-cell">
+          <div class="sticky ev">CreditsPurchased</div>
+          <div class="sticky ext">Stripe</div>
+          <div class="sticky agg">CreditPack</div>
+        </div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell"></div>
+        <div class="ctx-cell">
+          <div class="sticky pol">When PriceSnapshotCaptured → DebitCredits</div>
+          <div class="sticky cmd">DebitCredits</div>
+          <div class="sticky ev">CreditsDebited</div>
+          <div class="sticky ev">CreditsExhausted</div>
+          <div class="sticky agg">CreditBalance</div>
+          <div class="sticky rm">BalanceProjection</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- OPEN QUESTIONS from agents (seeded — agent responses fill this) -->
+  <section class="questions-section">
+    <h2>Open Questions for the Storm</h2>
+    <div class="questions-grid">
+      <div class="question-card biz">
+        <div class="from">Ana · Business Domain</div>
+        <p>What happens when the price drops, the user clicks the link in the alert, and the price has already gone back up? Does the domain capture <em>PriceAlertExpired</em>?</p>
+      </div>
+      <div class="question-card biz">
+        <div class="from">Ana · Business Domain</div>
+        <p>Can a user set a <em>maximum acceptable price</em> threshold, not just watch for any drop? This changes the shape of WatchRequest and what "drop" means.</p>
+      </div>
+      <div class="question-card biz">
+        <div class="from">Ana · Business Domain</div>
+        <p>Should WatchRequest track <em>FlexibleDates</em> (±3 days)? Kiwi.com is built around this. If so, the Scheduler and Search contexts change significantly.</p>
+      </div>
+      <div class="question-card ddd">
+        <div class="from">Marcus · DDD Architect</div>
+        <p>Is <em>SearchPolicy</em> a value object embedded in WatchRequest, or a separate aggregate? Its lifecycle (pause, resume, expire) suggests it needs its own root.</p>
+      </div>
+      <div class="question-card ddd">
+        <div class="from">Marcus · DDD Architect</div>
+        <p><em>PriceSnapshot</em> — is it an entity with identity (so you can compare snapshots over time) or a value object? If the Pricing context needs historical analysis, it must be an entity with a timestamp ID.</p>
+      </div>
+      <div class="question-card ddd">
+        <div class="from">Marcus · DDD Architect</div>
+        <p>The <em>Ledger</em> context is missing from the board. Billing owns purchasing; Ledger owns debit/balance. These should be two contexts. Have you separated them in code?</p>
+      </div>
+      <div class="question-card tech">
+        <div class="from">Lena · Platform Engineer</div>
+        <p>Your in-process EventEmitter is synchronous by default in Node.js. If <em>DebitCredits</em> throws inside a <em>PriceSnapshotCaptured</em> handler, what's the rollback strategy? You need explicit error boundaries per handler.</p>
+      </div>
+      <div class="question-card tech">
+        <div class="from">Lena · Platform Engineer</div>
+        <p><em>SearchJobFailed</em> is on the board but what triggers it? Retry logic (2 attempts? 3?) and the dead-letter path need to be first-class domain events, not just try/catch.</p>
+      </div>
+      <div class="question-card tech">
+        <div class="from">Lena · Platform Engineer</div>
+        <p>For your TCC experiments: how do you measure the cost of crossing context boundaries in-process vs. extracted to microservices? You need a benchmark harness that can run the same flow both ways.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- AGENDA -->
+  <section class="agenda-section">
+    <h2>Session Agenda — 90 min</h2>
+    <div class="agenda">
+      <div class="agenda-item">
+        <div class="agenda-time">00:00</div>
+        <div class="agenda-dot"></div>
+        <div class="agenda-body">
+          <h4>Opening — Scope the problem space</h4>
+          <p>Walk through one real user scenario end-to-end (user sets a watch → gets an alert). Map it to the board together.</p>
+          <span class="agenda-tag open">Facilitated</span>
+        </div>
+      </div>
+      <div class="agenda-item">
+        <div class="agenda-time">00:15</div>
+        <div class="agenda-dot"></div>
+        <div class="agenda-body">
+          <h4>Event Storm — Happy path</h4>
+          <p>Walk the board left-to-right. Each agent challenges every event: Is this the right name? Is this really in this context? Is it missing a command?</p>
+          <span class="agenda-tag storm">Active Storm</span>
+        </div>
+      </div>
+      <div class="agenda-item">
+        <div class="agenda-time">00:40</div>
+        <div class="agenda-dot"></div>
+        <div class="agenda-body">
+          <h4>Failure paths — SearchJobFailed, CreditsExhausted, AlertFailed</h4>
+          <p>Map what the domain does when things go wrong. These are where most implementation bugs hide.</p>
+          <span class="agenda-tag storm">Active Storm</span>
+        </div>
+      </div>
+      <div class="agenda-item">
+        <div class="agenda-time">01:05</div>
+        <div class="agenda-dot"></div>
+        <div class="agenda-body">
+          <h4>Aggregate boundary review</h4>
+          <p>Marcus leads: challenge every aggregate on the board. Does WatchRequest own SearchPolicy? Should PriceSnapshot have an ID?</p>
+          <span class="agenda-tag review">Architecture</span>
+        </div>
+      </div>
+      <div class="agenda-item">
+        <div class="agenda-time">01:20</div>
+        <div class="agenda-dot"></div>
+        <div class="agenda-body">
+          <h4>Implementation gaps — map board to actual code</h4>
+          <p>Lena leads: which events live in handler.js vs. the right context? What's the next refactor priority?</p>
+          <span class="agenda-tag close">Action Items</span>
+        </div>
+      </div>
+      <div class="agenda-item">
+        <div class="agenda-time">01:30</div>
+        <div class="agenda-dot"></div>
+        <div class="agenda-body">
+          <h4>Capture decisions → Experiment Log</h4>
+          <p>Every decision made today becomes an Experiment Log entry. What changed? What's the open question for the next session?</p>
+          <span class="agenda-tag close">Log</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body></html>
