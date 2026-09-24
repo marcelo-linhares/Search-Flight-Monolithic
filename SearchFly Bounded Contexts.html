@@ -1,0 +1,433 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SearchFly Bounded Contexts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ── TOKENS — dark-first, matches existing SearchFly UI ── */
+:root {
+  --bg:         #0C1018;
+  --bg-card:    #131825;
+  --bg-tag:     #0A0E18;
+  --border:     #1C2438;
+  --border-card:#1D2540;
+  --text:       #EDF0F7;
+  --text-muted: #8493AC;
+  --text-tag:   #5C6D87;
+  --text-link:  #5C7FBF;
+  --new-bg:     rgba(139,92,246,.12);
+  --new-border: rgba(139,92,246,.28);
+  --new-text:   #A78BFA;
+
+  /* context dot palette */
+  --c-watch:    #A855F7;
+  --c-search:   #22C55E;
+  --c-scheduler:#10B981;
+  --c-pricing:  #F97316;
+  --c-notif:    #EAB308;
+  --c-integ:    #6366F1;
+  --c-billing:  #EC4899;
+  --c-ledger:   #06B6D4;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:         #EEF1F8;
+    --bg-card:    #FFFFFF;
+    --bg-tag:     #E4E9F4;
+    --border:     #D0D8EC;
+    --border-card:#D4DCEE;
+    --text:       #111827;
+    --text-muted: #596480;
+    --text-tag:   #7888A4;
+    --text-link:  #3D5FA0;
+    --new-bg:     rgba(139,92,246,.08);
+    --new-border: rgba(139,92,246,.22);
+    --new-text:   #7C3AED;
+  }
+}
+:root[data-theme="light"] {
+  --bg:#EEF1F8;--bg-card:#FFFFFF;--bg-tag:#E4E9F4;
+  --border:#D0D8EC;--border-card:#D4DCEE;--text:#111827;
+  --text-muted:#596480;--text-tag:#7888A4;--text-link:#3D5FA0;
+  --new-bg:rgba(139,92,246,.08);--new-border:rgba(139,92,246,.22);--new-text:#7C3AED;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 32px 20px 48px;
+  -webkit-font-smoothing: antialiased;
+  max-width: 1100px;
+  margin-inline: auto;
+}
+
+/* ── HEADER ── */
+.header {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--new-text);
+  background: var(--new-bg);
+  border: 1px solid var(--new-border);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em;
+}
+
+.legend-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── GRID ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 460px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 16px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  position: relative;
+  transition: border-color .15s;
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--dot-color) 40%, var(--border-card));
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot-color);
+  flex-shrink: 0;
+}
+
+.card-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.new-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--new-text);
+  background: var(--new-bg);
+  border: 1px solid var(--new-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag {
+  background: var(--bg-tag);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--text-tag);
+  white-space: nowrap;
+}
+
+.explore {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-link);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-top: 2px;
+  width: fit-content;
+  font-family: inherit;
+}
+
+.explore:hover { opacity: .75; }
+.explore:focus-visible {
+  outline: 2px solid var(--text-link);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── DIVIDER between old and new group ── */
+.group-label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 2px;
+}
+
+.group-label-text {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  opacity: .55;
+}
+
+.group-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+</style>
+
+<div class="header">
+  <div class="section-label">Bounded Contexts</div>
+  <div class="legend">
+    <span class="legend-badge">new</span>
+    <span class="legend-text">added by event storm session</span>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- ── EXISTING CONTEXTS ── -->
+  <div class="group-label">
+    <span class="group-label-text">Core contexts</span>
+    <span class="group-line"></span>
+  </div>
+
+  <!-- Search -->
+  <div class="card" style="--dot-color: var(--c-search)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Search</span>
+      </div>
+    </div>
+    <p class="card-desc">Core domain. Executes flight lookups and interprets raw API results into domain snapshots.</p>
+    <div class="tags">
+      <span class="tag">PriceSnapshot</span>
+      <span class="tag">RouteVO</span>
+      <span class="tag">SearchResult</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- Scheduler -->
+  <div class="card" style="--dot-color: var(--c-scheduler)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Scheduler</span>
+      </div>
+    </div>
+    <p class="card-desc">Drives autonomy. Decides when each watch request should be triggered based on rules.</p>
+    <div class="tags">
+      <span class="tag">SearchJob</span>
+      <span class="tag">TriggerPolicy</span>
+      <span class="tag">CronExpression</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- Pricing -->
+  <div class="card" style="--dot-color: var(--c-pricing)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Pricing</span>
+      </div>
+    </div>
+    <p class="card-desc">Detects significant price changes and classifies them as drops, spikes, or anomalies.</p>
+    <div class="tags">
+      <span class="tag">PriceHistory</span>
+      <span class="tag">PriceDrop</span>
+      <span class="tag">Threshold</span>
+      <span class="tag">Anomaly</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- Notification -->
+  <div class="card" style="--dot-color: var(--c-notif)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Notification</span>
+      </div>
+    </div>
+    <p class="card-desc">Emits alerts when Pricing raises an event. Handles channels, frequency, and preferences.</p>
+    <div class="tags">
+      <span class="tag">Alert</span>
+      <span class="tag">Channel</span>
+      <span class="tag">Preference</span>
+      <span class="tag">Digest</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- Integration -->
+  <div class="card" style="--dot-color: var(--c-integ)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Integration</span>
+      </div>
+    </div>
+    <p class="card-desc">Anti-corruption layer. Wraps external flight APIs (Amadeus, Duffel, etc.) behind a clean port.</p>
+    <div class="tags">
+      <span class="tag">FlightPort</span>
+      <span class="tag">ApiAdapter</span>
+      <span class="tag">RateLimit</span>
+      <span class="tag">ResponseMapper</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- spacer to push new section to next row -->
+  <div></div>
+
+  <!-- ── NEW CONTEXTS (added from event storm) ── -->
+  <div class="group-label">
+    <span class="group-label-text">Added from event storm</span>
+    <span class="group-line"></span>
+  </div>
+
+  <!-- Watch Management — NEW -->
+  <div class="card" style="--dot-color: var(--c-watch)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Watch Management</span>
+      </div>
+      <span class="new-badge">new</span>
+    </div>
+    <p class="card-desc">Owns user watch configuration and its full lifecycle — active, suspended, expired, cancelled. Reactivates watches when credits are restored.</p>
+    <div class="tags">
+      <span class="tag">WatchRequest</span>
+      <span class="tag">SearchPolicy</span>
+      <span class="tag">WatchStatus</span>
+      <span class="tag">WatchExpiry</span>
+      <span class="tag">WatchSuspendedDueToCredits</span>
+      <span class="tag">WatchReactivated</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- Billing — NEW -->
+  <div class="card" style="--dot-color: var(--c-billing)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Billing</span>
+      </div>
+      <span class="new-badge">new</span>
+    </div>
+    <p class="card-desc">Manages credit purchases and payment events. Wraps Stripe behind a clean payment port.</p>
+    <div class="tags">
+      <span class="tag">CreditPack</span>
+      <span class="tag">PaymentIntent</span>
+      <span class="tag">Invoice</span>
+      <span class="tag">WebhookEvent</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+  <!-- Ledger — NEW -->
+  <div class="card" style="--dot-color: var(--c-ledger)">
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="dot"></span>
+        <span class="card-name">Ledger</span>
+      </div>
+      <span class="new-badge">new</span>
+    </div>
+    <p class="card-desc">Tracks credit balance and debits per search run. Enforces spend limits before jobs fire. Signals Watch Management on exhaustion and recovery.</p>
+    <div class="tags">
+      <span class="tag">CreditBalance</span>
+      <span class="tag">CreditEntry</span>
+      <span class="tag">Reservation</span>
+      <span class="tag">BalanceVersion</span>
+      <span class="tag">BalanceRestored</span>
+    </div>
+    <button class="explore">Explore ↗</button>
+  </div>
+
+</div>
+
+</body></html>

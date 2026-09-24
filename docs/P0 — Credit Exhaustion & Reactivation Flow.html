@@ -1,0 +1,175 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>P0 — Credit Exhaustion & Reactivation Flow</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#0C1018;color:#EDF0F7;font-family:'Inter',system-ui,sans-serif;font-size:14px;padding:28px 16px 44px;max-width:980px;margin-inline:auto}
+@media(prefers-color-scheme:light){body{background:#EEF1F8;color:#111827}}
+.label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8493AC;margin-bottom:18px}
+.story{background:#131825;border:1px solid #1C2438;border-radius:10px;padding:16px 20px;margin-top:20px;font-size:12.5px;color:#8493AC;line-height:1.7}
+.story strong{color:#EDF0F7}
+.story code{font-family:'JetBrains Mono',monospace;font-size:11px;color:#A78BFA;background:rgba(139,92,246,.1);padding:1px 5px;border-radius:3px}
+figcaption{font-size:12px;color:#8493AC;margin-top:14px;line-height:1.65}
+figcaption strong{color:#EDF0F7}
+</style>
+
+<p class="label">P0 — Credit Exhaustion &amp; Reactivation</p>
+
+<figure>
+<svg viewBox="0 0 960 500" role="img"
+     aria-label="Two flows: credit exhaustion leading to watch suspension, and credit top-up leading to watch reactivation"
+     style="max-width:100%;height:auto;display:block">
+<defs>
+  <marker id="ac" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#06B6D4"/></marker>
+  <marker id="av" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#A855F7"/></marker>
+  <marker id="ay" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#EAB308"/></marker>
+  <marker id="at" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#10B981"/></marker>
+  <marker id="ap" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#EC4899"/></marker>
+  <marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#22C55E"/></marker>
+</defs>
+
+<rect width="960" height="500" fill="#0C1018" rx="12"/>
+
+<!-- ══ FLOW A LABEL ══ -->
+<rect x="20" y="20" width="18" height="18" rx="4" fill="rgba(239,68,68,.15)" stroke="rgba(239,68,68,.4)" stroke-width="1"/>
+<text x="29" y="33" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#EF4444">A</text>
+<text x="46" y="33" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#8493AC" letter-spacing=".06em">CREDIT EXHAUSTION — watch silently dies without this flow</text>
+
+<!-- ══ FLOW B LABEL ══ -->
+<rect x="20" y="270" width="18" height="18" rx="4" fill="rgba(34,197,94,.1)" stroke="rgba(34,197,94,.3)" stroke-width="1"/>
+<text x="29" y="283" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#22C55E">B</text>
+<text x="46" y="283" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#8493AC" letter-spacing=".06em">REACTIVATION — closes the loop after top-up</text>
+
+<!-- divider -->
+<line x1="20" y1="256" x2="940" y2="256" stroke="#1C2438" stroke-width="1" stroke-dasharray="4 4"/>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- FLOW A: EXHAUSTION                        -->
+<!-- ══════════════════════════════════════════ -->
+
+<!-- Step nodes for flow A (y center = 155) -->
+<!-- 1. Ledger -->
+<rect x="30" y="100" width="130" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="30" y="100" width="130" height="3" rx="1.5" fill="#06B6D4"/>
+<text x="95" y="126" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Ledger</text>
+<text x="95" y="142" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#06B6D4">balance = 0</text>
+
+<!-- arrow 1→2 -->
+<line x1="160" y1="128" x2="218" y2="128" stroke="#06B6D4" stroke-width="2" marker-end="url(#ac)"/>
+<text x="189" y="118" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#06B6D4">CreditsExhausted</text>
+
+<!-- 2. Watch Management -->
+<rect x="220" y="100" width="150" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="220" y="100" width="150" height="3" rx="1.5" fill="#A855F7"/>
+<text x="295" y="126" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Watch Mgmt</text>
+<text x="295" y="142" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#A855F7">suspends watch</text>
+
+<!-- arrow 2→3 -->
+<line x1="370" y1="128" x2="428" y2="128" stroke="#A855F7" stroke-width="2" marker-end="url(#av)"/>
+<text x="399" y="118" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#A855F7">WatchSuspended</text>
+<text x="399" y="129" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#A855F7">DueToCredits</text>
+
+<!-- NEW badge -->
+<rect x="374" y="135" width="52" height="14" rx="3" fill="rgba(139,92,246,.15)" stroke="rgba(139,92,246,.35)" stroke-width="1"/>
+<text x="400" y="145" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" font-weight="700" fill="#A78BFA" letter-spacing=".06em">NEW EVENT</text>
+
+<!-- 3. Notification -->
+<rect x="430" y="100" width="140" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="430" y="100" width="140" height="3" rx="1.5" fill="#EAB308"/>
+<text x="500" y="126" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Notification</text>
+<text x="500" y="142" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#EAB308">sends alert</text>
+
+<!-- arrow 3→User -->
+<line x1="570" y1="128" x2="628" y2="128" stroke="#EAB308" stroke-width="2" marker-end="url(#ay)"/>
+<text x="599" y="118" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#EAB308">AlertSent</text>
+
+<!-- 4. User (ghost box) -->
+<rect x="630" y="105" width="110" height="46" rx="8" fill="#0A0E18" stroke="#1C2438" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="685" y="132" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#2A3450">👤 User</text>
+
+<!-- annotation box A -->
+<rect x="760" y="90" width="175" height="80" rx="8" fill="rgba(239,68,68,.05)" stroke="rgba(239,68,68,.2)" stroke-width="1"/>
+<text x="775" y="110" font-family="Inter,sans-serif" font-size="10" font-weight="600" fill="#EF4444">Without this flow:</text>
+<text x="775" y="126" font-family="Inter,sans-serif" font-size="10" fill="#8493AC">Watch stops running.</text>
+<text x="775" y="140" font-family="Inter,sans-serif" font-size="10" fill="#8493AC">User notices days later.</text>
+<text x="775" y="154" font-family="Inter,sans-serif" font-size="10" fill="#8493AC">Missed deal → churn.</text>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- FLOW B: REACTIVATION                      -->
+<!-- ══════════════════════════════════════════ -->
+
+<!-- 1. Billing -->
+<rect x="30" y="350" width="130" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="30" y="350" width="130" height="3" rx="1.5" fill="#EC4899"/>
+<text x="95" y="376" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Billing</text>
+<text x="95" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#EC4899">Stripe webhook</text>
+
+<!-- arrow 1→2 -->
+<line x1="160" y1="378" x2="218" y2="378" stroke="#EC4899" stroke-width="2" marker-end="url(#ap)"/>
+<text x="189" y="368" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#EC4899">CreditsPurchased</text>
+
+<!-- 2. Ledger -->
+<rect x="220" y="350" width="130" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="220" y="350" width="130" height="3" rx="1.5" fill="#06B6D4"/>
+<text x="285" y="376" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Ledger</text>
+<text x="285" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#06B6D4">was 0, now &gt; 0</text>
+
+<!-- arrow 2→3 -->
+<line x1="350" y1="378" x2="408" y2="378" stroke="#06B6D4" stroke-width="2" marker-end="url(#ac)"/>
+<text x="379" y="368" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#06B6D4">BalanceRestored</text>
+
+<!-- NEW badge -->
+<rect x="354" y="382" width="52" height="14" rx="3" fill="rgba(139,92,246,.15)" stroke="rgba(139,92,246,.35)" stroke-width="1"/>
+<text x="380" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" font-weight="700" fill="#A78BFA" letter-spacing=".06em">NEW EVENT</text>
+
+<!-- 3. Watch Management -->
+<rect x="410" y="350" width="150" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="410" y="350" width="150" height="3" rx="1.5" fill="#A855F7"/>
+<text x="485" y="376" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Watch Mgmt</text>
+<text x="485" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#A855F7">resumes SUSPENDED</text>
+
+<!-- arrow 3→4 -->
+<line x1="560" y1="378" x2="618" y2="378" stroke="#A855F7" stroke-width="2" marker-end="url(#av)"/>
+<text x="589" y="368" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#A855F7">WatchReactivated</text>
+
+<!-- NEW badge -->
+<rect x="562" y="382" width="52" height="14" rx="3" fill="rgba(139,92,246,.15)" stroke="rgba(139,92,246,.35)" stroke-width="1"/>
+<text x="588" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" font-weight="700" fill="#A78BFA" letter-spacing=".06em">NEW EVENT</text>
+
+<!-- 4. Scheduler -->
+<rect x="620" y="350" width="130" height="56" rx="8" fill="#0F1620" stroke="#1C2438" stroke-width="1.5"/>
+<rect x="620" y="350" width="130" height="3" rx="1.5" fill="#10B981"/>
+<text x="685" y="376" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" font-weight="700" fill="#EDF0F7">Scheduler</text>
+<text x="685" y="392" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#10B981">re-registers jobs</text>
+
+<!-- annotation box B -->
+<rect x="770" y="340" width="175" height="80" rx="8" fill="rgba(34,197,94,.05)" stroke="rgba(34,197,94,.2)" stroke-width="1"/>
+<text x="785" y="360" font-family="Inter,sans-serif" font-size="10" font-weight="600" fill="#22C55E">Invariant (Ledger):</text>
+<text x="785" y="376" font-family="Inter,sans-serif" font-size="10" fill="#8493AC">Emit only when balance</text>
+<text x="785" y="390" font-family="Inter,sans-serif" font-size="10" fill="#8493AC">crosses 0 → positive.</text>
+<text x="785" y="404" font-family="Inter,sans-serif" font-size="10" fill="#8493AC">Not on every top-up.</text>
+
+<!-- ══ NEW EVENTS SUMMARY (bottom) ══ -->
+<rect x="20" y="452" width="920" height="32" rx="6" fill="#0A0E18" stroke="#1C2438" stroke-width="1"/>
+<text x="36" y="472" font-family="Inter,sans-serif" font-size="10" font-weight="600" fill="#5C6D87" letter-spacing=".06em">NEW EVENTS ADDED:</text>
+<rect x="175" y="460" width="6" height="6" rx="1" fill="#A855F7"/>
+<text x="186" y="470" font-family="JetBrains Mono,monospace" font-size="9.5" fill="#A855F7">WatchSuspendedDueToCredits</text>
+<rect x="400" y="460" width="6" height="6" rx="1" fill="#06B6D4"/>
+<text x="411" y="470" font-family="JetBrains Mono,monospace" font-size="9.5" fill="#06B6D4">BalanceRestored</text>
+<rect x="560" y="460" width="6" height="6" rx="1" fill="#A855F7"/>
+<text x="571" y="470" font-family="JetBrains Mono,monospace" font-size="9.5" fill="#A855F7">WatchReactivated</text>
+<text x="720" y="470" font-family="Inter,sans-serif" font-size="9.5" fill="#3A4450">→  3 new listeners  ·  0 new BCs</text>
+
+</svg>
+<figcaption>
+  <strong>Flow A</strong> closes the silent-suspension gap: the moment Ledger hits zero it emits <code>CreditsExhausted</code>, Watch Management suspends and immediately emits <code>WatchSuspendedDueToCredits</code>, and Notification sends the user an alert with a direct top-up link.<br>
+  <strong>Flow B</strong> closes the reactivation gap: Ledger emits <code>BalanceRestored</code> only on the transition from insufficient → positive (not on every credit add), Watch Management wakes all suspended-by-credits watches and emits <code>WatchReactivated</code>, and Scheduler re-registers the jobs. The user is back online automatically.
+</figcaption>
+</figure>
+
+<div class="story">
+  <strong>User story (one sentence):</strong> As a user whose watch was suspended because my credits ran out, I want to receive an alert immediately when that happens and have my watch resume automatically after I buy more credits — with no manual action required.<br><br>
+  <strong>Implementation:</strong> 3 new domain events (<code>WatchSuspendedDueToCredits</code>, <code>BalanceRestored</code>, <code>WatchReactivated</code>), 3 new listener registrations across Watch Management, Notification, and Scheduler. No new bounded context, no schema migration beyond adding two event types to the event log.
+</div>
+
+</body></html>

@@ -1,0 +1,716 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SearchFly — Happy Path</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg:#0C1018; --bg-card:#131825; --bg-tag:#0A0E18;
+  --border:#1C2438; --border-card:#1D2540;
+  --text:#EDF0F7; --muted:#8493AC; --tag:#5C6D87;
+  --watch:#A855F7; --search:#22C55E; --scheduler:#10B981;
+  --pricing:#F97316; --notif:#EAB308; --billing:#EC4899; --ledger:#06B6D4;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 40px;-webkit-font-smoothing:antialiased}
+
+/* ── PAGE HEADER ── */
+.page-eyebrow{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;align-self:flex-start;width:100%;max-width:680px}
+.page-title{font-size:18px;font-weight:700;align-self:flex-start;margin-bottom:4px;width:100%;max-width:680px}
+.page-sub{font-size:12px;color:var(--muted);align-self:flex-start;margin-bottom:24px;width:100%;max-width:680px}
+
+/* ── FLOW MAP ── */
+.flow-map{display:flex;align-items:center;gap:0;margin-bottom:28px;width:100%;max-width:680px;overflow-x:auto;padding-bottom:4px}
+.flow-step{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0}
+.flow-dot{width:36px;height:36px;border-radius:50%;border:2px solid var(--border);background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:14px;transition:border-color .2s,background .2s;position:relative}
+.flow-dot.active{border-color:var(--watch);background:rgba(168,85,247,.12)}
+.flow-step-num{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.flow-step.active .flow-step-num{background:var(--watch);color:#fff;border-color:var(--watch)}
+.flow-label{font-size:9px;font-weight:500;color:var(--muted);text-align:center;max-width:60px}
+.flow-step.active .flow-label{color:var(--text)}
+.flow-arrow{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;padding:0 4px;margin-top:-14px}
+.flow-arrow-line{width:24px;height:1px;background:var(--border)}
+.flow-arrow-event{font-family:'JetBrains Mono',monospace;font-size:6.5px;color:var(--tag);white-space:nowrap}
+
+/* ── PHONE ── */
+.phone-wrap{position:relative}
+.phone{width:320px;background:#000;border-radius:44px;border:8px solid #1a1a2e;box-shadow:0 0 0 1px #2a2a4a,0 32px 64px rgba(0,0,0,.6);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:100px;height:28px;background:#000;border-radius:0 0 18px 18px;z-index:10}
+.status-bar{height:44px;background:var(--bg);display:flex;align-items:flex-end;padding:0 20px 8px;justify-content:space-between;flex-shrink:0;z-index:5}
+.status-time{font-size:11px;font-weight:600}
+.status-icons{font-size:10px;color:var(--muted);display:flex;gap:4px;align-items:center}
+
+/* ── SCREEN CONTAINER (scrollable area only) ── */
+.screen-container{flex:1;position:relative;overflow:hidden;min-height:0}
+.screen{position:absolute;inset:0;overflow-y:auto;background:var(--bg);display:none;flex-direction:column;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{display:flex}
+
+/* ── LOGO ── */
+.logo{display:flex;align-items:center;gap:8px}
+.logo-name{font-size:17px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.logo-search{color:var(--muted);font-weight:600}
+.logo-fly{background:linear-gradient(135deg,#EC4899,#F97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── APP HEADER ── */
+.app-header{padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.app-header.has-back{justify-content:flex-start;gap:12px}
+.back-btn{width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;color:var(--text)}
+.app-name{font-size:16px;font-weight:700}
+.header-right{display:flex;align-items:center;gap:8px}
+.credit-chip{background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.3);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--ledger);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px}
+.notif-btn{width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;position:relative}
+.notif-dot{width:7px;height:7px;border-radius:50%;background:var(--notif);position:absolute;top:4px;right:4px}
+
+/* ── SCREEN CONTENT HELPERS ── */
+.screen-body{flex:1;padding:0 16px 16px}
+.section-head{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:6px}
+.bc-chip{font-family:'JetBrains Mono',monospace;font-size:8px;border-radius:4px;padding:1px 5px;font-weight:600;border:1px solid;opacity:.8}
+
+/* ── EMPTY STATE ── */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;gap:10px}
+.empty-icon{font-size:48px;opacity:.4}
+.empty-title{font-size:15px;font-weight:600}
+.empty-sub{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* ── FAB ── */
+.fab{position:absolute;bottom:16px;right:16px;width:52px;height:52px;border-radius:50%;background:var(--watch);border:none;color:#fff;font-size:22px;font-weight:300;cursor:pointer;box-shadow:0 4px 16px rgba(168,85,247,.4);display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.fab:active{transform:scale(.94)}
+
+/* ── GLOBAL BOTTOM NAV (outside scroll area) ── */
+#global-nav{height:56px;background:var(--bg-card);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;flex-shrink:0}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 12px}
+.nav-icon{font-size:16px}
+.nav-label{font-size:9px;color:var(--muted)}
+.nav-item.active .nav-label{color:var(--watch)}
+.home-ind{height:28px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.home-ind-bar{width:100px;height:4px;background:#333;border-radius:2px}
+
+/* ── FORM ELEMENTS ── */
+.form-group{margin-bottom:14px}
+.form-label-text{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.form-field{background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.form-field.focused{border-color:var(--watch)}
+.field-icon{font-size:14px;flex-shrink:0}
+.field-val{font-size:13px;font-weight:500}
+.field-hint{font-size:12px;color:var(--muted)}
+.field-arrow{margin-left:auto;color:var(--muted);font-size:11px}
+.form-select{background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;cursor:pointer}
+.form-select-val{font-weight:500}
+.form-select-arrow{color:var(--muted)}
+
+/* ── BUTTONS ── */
+.btn-primary{background:var(--watch);border:none;border-radius:12px;color:#fff;font-family:'Inter',system-ui,sans-serif;font-size:14px;font-weight:600;padding:14px;width:100%;cursor:pointer;margin-top:8px;transition:opacity .15s}
+.btn-primary:active{opacity:.8}
+.btn-secondary{background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:13px;font-weight:500;padding:12px;width:100%;cursor:pointer;margin-top:8px}
+
+/* ── WATCH CARD ── */
+.watch-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.watch-card:active{border-color:var(--watch)}
+.watch-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.watch-route{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.watch-status-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:20px;padding:2px 8px;border:1px solid;font-family:'JetBrains Mono',monospace}
+.badge-active{color:var(--search);border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.08)}
+.watch-card-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.watch-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.watch-meta-dot{width:5px;height:5px;border-radius:50%}
+.watch-price{font-size:14px;font-weight:700}
+.watch-price-sub{font-size:10px;color:var(--muted)}
+.sparkline{height:28px;width:80px;background:linear-gradient(to right,rgba(34,197,94,.05),rgba(34,197,94,.15));border-radius:4px;position:relative;overflow:hidden}
+.sparkline::after{content:'';position:absolute;bottom:4px;left:4px;right:4px;height:1px;background:linear-gradient(to right,var(--search) 60%,#F97316);opacity:.6;border-radius:1px}
+
+/* ── WATCH DETAIL ── */
+.price-chart-container{background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:14px;margin-bottom:12px}
+.price-chart-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
+.price-current{font-size:22px;font-weight:700}
+.price-current-label{font-size:10px;color:var(--muted)}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:64px}
+.bar{flex:1;border-radius:3px 3px 0 0;opacity:.75;transition:opacity .1s}
+.bar:hover{opacity:1}
+.detail-row{background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.detail-row-left{display:flex;align-items:center;gap:10px}
+.detail-row-icon{font-size:14px}
+.detail-row-label{font-size:12px;color:var(--muted)}
+.detail-row-val{font-size:12px;font-weight:600}
+
+/* ── PRICE ALERT / S7 ── */
+.alert-push-notif{background:var(--bg-card);border:1px solid rgba(234,179,8,.25);border-radius:14px;padding:14px;margin-bottom:16px}
+.alert-push-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.alert-push-app-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.2)}
+.alert-push-meta{flex:1}
+.alert-push-app{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.alert-push-time{font-size:9px;color:var(--tag);float:right}
+.alert-push-title{font-size:13px;font-weight:700}
+.alert-push-body{font-size:12px;color:var(--muted);line-height:1.4}
+.price-drop-hero{background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:16px;margin-bottom:12px;text-align:center}
+.drop-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--search);font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+.price-compare{display:flex;align-items:center;justify-content:center;gap:16px}
+.price-old{font-size:16px;color:var(--muted);text-decoration:line-through}
+.price-arrow{font-size:18px;color:var(--search)}
+.price-new{font-size:22px;font-weight:700;color:var(--search)}
+.price-new-label{font-size:10px;color:var(--muted);margin-top:4px}
+
+/* ── LOGIN SCREEN ── */
+.login-hero{display:flex;flex-direction:column;align-items:center;padding:40px 24px 28px;text-align:center}
+.login-logo-wrap{margin-bottom:20px}
+.login-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--muted);line-height:1.5}
+.login-form{padding:0 16px 24px}
+.input-group{margin-bottom:12px}
+.input-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+.input-field{background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:13px 14px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
+.input-field.active{border-color:var(--watch)}
+.input-icon{font-size:15px;flex-shrink:0}
+.input-text{font-size:13px;flex:1}
+.input-action{font-size:12px;color:var(--tag);cursor:pointer}
+.divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--tag);font-size:11px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.link-text{font-size:12px;color:var(--text-link,#5C7FBF);text-align:center;cursor:pointer;padding:8px 0;text-align:center;display:block;color:#5C7FBF}
+
+/* ── PROFILE FORM (CLIENT INFO) ── */
+.profile-header{padding:20px 16px 12px}
+.profile-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.profile-sub{font-size:12px;color:var(--muted)}
+.profile-form{padding:0 16px 24px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.toggle-label{font-size:13px;font-weight:500}
+.toggle-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.toggle{width:40px;height:22px;border-radius:11px;background:var(--watch);position:relative;flex-shrink:0;cursor:pointer}
+.toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;transition:right .15s}
+.toggle.off{background:var(--border)}
+.toggle.off .toggle-knob{right:unset;left:2px}
+
+/* ── CONTROLS (outside phone) ── */
+.controls{display:flex;align-items:center;gap:12px;margin-top:20px;width:100%;max-width:680px;justify-content:center}
+.ctrl-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;padding:6px 20px;border-radius:20px;cursor:pointer;transition:border-color .15s,color .15s}
+.ctrl-btn:hover{border-color:var(--watch);color:var(--text)}
+.ctrl-btn:disabled{opacity:.3;cursor:default}
+.screen-indicator{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-width:60px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="page-eyebrow">SearchFly · Sofia — UX Wireframe</div>
+<div class="page-title">Happy Path · Login → Watch → Alert</div>
+<div class="page-sub">7 screens · Click through or use Prev / Next · Domain events annotated on arrows</div>
+
+<!-- ── FLOW MAP ── -->
+<div class="flow-map" id="flow-map">
+  <div class="flow-step active" id="fs1" onclick="goTo(1)">
+    <div class="flow-dot active">🔑<span class="flow-step-num">1</span></div>
+    <div class="flow-label">Login</div>
+  </div>
+  <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-event">UserAuthenticated</div></div>
+  <div class="flow-step" id="fs2" onclick="goTo(2)">
+    <div class="flow-dot">👤<span class="flow-step-num">2</span></div>
+    <div class="flow-label">Profile</div>
+  </div>
+  <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-event">ProfileSaved</div></div>
+  <div class="flow-step" id="fs3" onclick="goTo(3)">
+    <div class="flow-dot">✦<span class="flow-step-num">3</span></div>
+    <div class="flow-label">Watch List (empty)</div>
+  </div>
+  <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-event">WatchCreated</div></div>
+  <div class="flow-step" id="fs4" onclick="goTo(4)">
+    <div class="flow-dot">＋<span class="flow-step-num">4</span></div>
+    <div class="flow-label">Create Watch</div>
+  </div>
+  <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-event">WatchCreated</div></div>
+  <div class="flow-step" id="fs5" onclick="goTo(5)">
+    <div class="flow-dot">📋<span class="flow-step-num">5</span></div>
+    <div class="flow-label">Watch List (active)</div>
+  </div>
+  <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-event">tap watch</div></div>
+  <div class="flow-step" id="fs6" onclick="goTo(6)">
+    <div class="flow-dot">📈<span class="flow-step-num">6</span></div>
+    <div class="flow-label">Watch Detail</div>
+  </div>
+  <div class="flow-arrow"><div class="flow-arrow-line"></div><div class="flow-arrow-event">PriceDropDetected</div></div>
+  <div class="flow-step" id="fs7" onclick="goTo(7)">
+    <div class="flow-dot">🔔<span class="flow-step-num">7</span></div>
+    <div class="flow-label">Price Alert</div>
+  </div>
+</div>
+
+<!-- ── PHONE ── -->
+<div class="phone-wrap">
+  <div class="phone">
+    <div class="status-bar">
+      <span class="status-time">09:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+    </div>
+
+    <!-- scrollable area only — no bottom nav inside here -->
+    <div class="screen-container">
+
+      <!-- ════ S1: LOGIN ════ -->
+      <div class="screen active" id="s1">
+        <div class="login-hero">
+          <!-- LOGO — large version for login -->
+          <div class="login-logo-wrap">
+            <svg viewBox="0 0 56 56" width="56" height="56" fill="none" aria-label="SearchFly logo">
+              <defs>
+                <linearGradient id="lgh1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#A855F7"/>
+                  <stop offset="100%" stop-color="#EC4899"/>
+                </linearGradient>
+                <linearGradient id="lgh2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#EC4899"/>
+                  <stop offset="100%" stop-color="#F97316"/>
+                </linearGradient>
+              </defs>
+              <!-- outer loupe ring: purple→pink -->
+              <circle cx="23" cy="23" r="16" stroke="url(#lgh1)" stroke-width="4.5"/>
+              <!-- flight arc inside: pink→orange -->
+              <path d="M 10 27 C 14 10 32 11 37 18" stroke="url(#lgh2)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+              <!-- departure dot -->
+              <circle cx="10" cy="27" r="3.5" fill="#EC4899"/>
+              <!-- plane — clear filled body pointing upper-right -->
+              <polygon points="34,14 43,20 37,27 32,22" fill="#F97316"/>
+              <!-- wing accent -->
+              <polygon points="37,27 44,25 43,20" fill="#EC4899" opacity="0.85"/>
+              <!-- handle: pink -->
+              <line x1="35.5" y1="35.5" x2="50" y2="50" stroke="#EC4899" stroke-width="4.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="login-title">SearchFly</div>
+          <div class="login-sub">Track flight prices.<br>Get alerted the moment they drop.</div>
+        </div>
+        <div class="login-form">
+          <div class="input-group">
+            <div class="input-label">Email</div>
+            <div class="input-field active">
+              <span class="input-icon">✉</span>
+              <input type="email" class="input-text" value="marcelo@example.com" placeholder="your@email.com" style="background:none;border:none;outline:none;flex:1;color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:13px"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">Password</div>
+            <div class="input-field">
+              <span class="input-icon">🔒</span>
+              <input type="password" class="input-text" value="password" placeholder="Password" style="background:none;border:none;outline:none;flex:1;color:var(--muted);font-family:'Inter',system-ui,sans-serif;font-size:13px"/>
+              <span class="input-action">Show</span>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="goTo(2)" style="margin-top:20px">Sign in →</button>
+          <div class="divider">or</div>
+          <button class="btn-secondary" onclick="goTo(2)">Continue with Google</button>
+          <a class="link-text" onclick="goTo(2)">Don't have an account? Create one</a>
+        </div>
+      </div><!-- /s1 -->
+
+      <!-- ════ S2: CLIENT PROFILE / ONBOARDING ════ -->
+      <div class="screen" id="s2">
+        <div class="app-header">
+          <div class="logo">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true">
+              <!-- ring: purple -->
+              <circle cx="11.5" cy="11.5" r="8" stroke="#A855F7" stroke-width="2.4"/>
+              <!-- arc: orange, thicker -->
+              <path d="M 5 13.5 C 7.5 6.5 17.5 7 19 11.5" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+              <!-- departure dot -->
+              <circle cx="5" cy="13.5" r="1.8" fill="#EC4899"/>
+              <!-- plane body -->
+              <polygon points="17,9 22,12 18.5,15.5 15.5,12.5" fill="#F97316"/>
+              <!-- wing accent -->
+              <polygon points="18.5,15.5 22.5,14 22,12" fill="#EC4899" opacity="0.85"/>
+              <!-- handle: pink -->
+              <line x1="18" y1="18" x2="24.5" y2="24.5" stroke="#EC4899" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            <div class="logo-name"><span class="logo-search">Search</span><span class="logo-fly">Fly</span></div>
+          </div>
+          <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tag)">1 of 1</div>
+        </div>
+        <div class="profile-header">
+          <div class="profile-title">Your profile</div>
+          <div class="profile-sub">Used to personalise your alerts and billing receipts.</div>
+        </div>
+        <div class="profile-form">
+          <div class="input-group">
+            <div class="input-label">Full name</div>
+            <div class="input-field active">
+              <span class="input-icon">👤</span>
+              <span class="input-text">Marcelo Linhares</span>
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">Email</div>
+            <div class="input-field">
+              <span class="input-icon">✉</span>
+              <span class="input-text" style="color:var(--muted)">marcelo@example.com</span>
+              <span class="input-action">✓</span>
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">Phone <span style="color:var(--tag);font-size:9px;text-transform:none;letter-spacing:0">(optional · SMS alerts)</span></div>
+            <div class="input-field">
+              <span class="input-icon">📱</span>
+              <span class="input-text field-hint">+55 11 9 ···</span>
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label" style="margin-bottom:8px">Notification preferences <span class="bc-chip" style="color:var(--notif);border-color:rgba(234,179,8,.3)">Notification BC</span></div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Push notifications</div>
+                <div class="toggle-sub">Price drops, watch status</div>
+              </div>
+              <div class="toggle"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Email alerts</div>
+                <div class="toggle-sub">Weekly digest + drops</div>
+              </div>
+              <div class="toggle off"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">Home airport</div>
+            <div class="form-select">
+              <span class="form-select-val">GRU — Guarulhos, São Paulo</span>
+              <span class="form-select-arrow">∨</span>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="goTo(3)">Save &amp; continue →</button>
+        </div>
+      </div><!-- /s2 -->
+
+      <!-- ════ S3: WATCH LIST (empty) ════ -->
+      <div class="screen" id="s3">
+        <div class="app-header">
+          <div class="logo">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true">
+              <circle cx="11.5" cy="11.5" r="8" stroke="#A855F7" stroke-width="2.4"/>
+              <path d="M 5 13.5 C 7.5 6.5 17.5 7 19 11.5" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+              <circle cx="5" cy="13.5" r="1.8" fill="#EC4899"/>
+              <polygon points="17,9 22,12 18.5,15.5 15.5,12.5" fill="#F97316"/>
+              <polygon points="18.5,15.5 22.5,14 22,12" fill="#EC4899" opacity="0.85"/>
+              <line x1="18" y1="18" x2="24.5" y2="24.5" stroke="#EC4899" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            <div class="logo-name"><span class="logo-search">Search</span><span class="logo-fly">Fly</span></div>
+          </div>
+          <div class="header-right">
+            <div class="credit-chip">32 cr</div>
+            <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+          </div>
+        </div>
+        <div class="screen-body">
+          <div class="section-head">WatchRequests <span class="bc-chip" style="color:var(--watch);border-color:rgba(168,85,247,.3)">Watch Mgmt</span></div>
+          <div class="empty-state">
+            <div class="empty-icon">✈</div>
+            <div class="empty-title">No watches yet</div>
+            <div class="empty-sub">Tap + to track a route and get alerted when prices drop.</div>
+          </div>
+        </div>
+        <button class="fab" onclick="goTo(4)">＋</button>
+      </div><!-- /s3 -->
+
+      <!-- ════ S4: CREATE WATCH ════ -->
+      <div class="screen" id="s4">
+        <div class="app-header has-back">
+          <button class="back-btn" onclick="goTo(3)">←</button>
+          <div class="app-name">New WatchRequest <span class="bc-chip" style="color:var(--watch);border-color:rgba(168,85,247,.3)">Watch Mgmt</span></div>
+        </div>
+        <div class="screen-body">
+          <div class="form-group">
+            <div class="form-label-text">Origin <span class="bc-chip" style="color:var(--scheduler);border-color:rgba(16,185,129,.3)">GPS detected</span></div>
+            <div class="form-field focused">
+              <span class="field-icon">📍</span>
+              <span class="field-val">GRU — Guarulhos, São Paulo</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label-text">Destination</div>
+            <div class="form-field">
+              <span class="field-icon">🌍</span>
+              <span class="field-val">LHR — London Heathrow</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label-text">Depart / Return</div>
+            <div class="form-field">
+              <span class="field-icon">📅</span>
+              <span class="field-val">2 Feb 2025 → 18 Feb 2025</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label-text">Cabin</div>
+            <div class="form-select">
+              <span class="form-select-val">Economy</span>
+              <span class="form-select-arrow">∨</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label-text">TriggerPolicy <span class="bc-chip" style="color:var(--pricing);border-color:rgba(249,115,22,.3)">Pricing BC</span></div>
+            <div class="form-select">
+              <span class="form-select-val">Alert on ≥ 10 % drop</span>
+              <span class="form-select-arrow">∨</span>
+            </div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--muted);line-height:1.5">
+            ⚡ <span style="color:var(--ledger);font-family:'JetBrains Mono',monospace;font-weight:600">1 credit</span> debited per search run · <span style="color:var(--scheduler)">Scheduler</span> runs every 4 h
+          </div>
+          <button class="btn-primary" onclick="goTo(5)">Create Watch →</button>
+        </div>
+      </div><!-- /s4 -->
+
+      <!-- ════ S5: WATCH LIST (active) ════ -->
+      <div class="screen" id="s5">
+        <div class="app-header">
+          <div class="logo">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true">
+              <circle cx="11.5" cy="11.5" r="8" stroke="#A855F7" stroke-width="2.4"/>
+              <path d="M 5 13.5 C 7.5 6.5 17.5 7 19 11.5" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+              <circle cx="5" cy="13.5" r="1.8" fill="#EC4899"/>
+              <polygon points="17,9 22,12 18.5,15.5 15.5,12.5" fill="#F97316"/>
+              <polygon points="18.5,15.5 22.5,14 22,12" fill="#EC4899" opacity="0.85"/>
+              <line x1="18" y1="18" x2="24.5" y2="24.5" stroke="#EC4899" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            <div class="logo-name"><span class="logo-search">Search</span><span class="logo-fly">Fly</span></div>
+          </div>
+          <div class="header-right">
+            <div class="credit-chip">28 cr</div>
+            <div class="notif-btn">🔔</div>
+          </div>
+        </div>
+        <div class="screen-body">
+          <div class="section-head">WatchRequests <span class="bc-chip" style="color:var(--watch);border-color:rgba(168,85,247,.3)">Watch Mgmt</span></div>
+          <div class="watch-card" onclick="goTo(6)">
+            <div class="watch-card-header">
+              <div class="watch-route">GRU <span style="color:var(--muted)">→</span> LHR</div>
+              <div class="watch-status-badge badge-active">● active</div>
+            </div>
+            <div class="watch-meta">
+              <div class="watch-meta-dot" style="background:var(--watch)"></div>
+              2 Feb – 18 Feb · Economy
+            </div>
+            <div class="watch-card-row">
+              <div>
+                <div class="watch-price-sub">Current best</div>
+                <div class="watch-price">R$2.840</div>
+              </div>
+              <div class="sparkline"></div>
+            </div>
+            <div class="watch-card-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+              <div class="watch-meta"><span style="color:var(--scheduler)">⏱</span> Next run in 3h 42m</div>
+              <div class="watch-meta" style="color:var(--ledger)">1 cr / run</div>
+            </div>
+          </div>
+          <div class="section-head">CreditBalance <span class="bc-chip" style="color:var(--ledger);border-color:rgba(6,182,212,.3)">Ledger</span></div>
+          <div style="background:rgba(6,182,212,.07);border:1px solid rgba(6,182,212,.2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:10px;color:var(--ledger);font-family:'JetBrains Mono',monospace;font-weight:600">28 credits remaining</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">~28 search runs</div>
+            </div>
+            <div style="font-size:22px;font-weight:700;color:var(--ledger);font-family:'JetBrains Mono',monospace">28</div>
+          </div>
+        </div>
+        <button class="fab" onclick="goTo(4)">＋</button>
+      </div><!-- /s5 -->
+
+      <!-- ════ S6: WATCH DETAIL ════ -->
+      <div class="screen" id="s6">
+        <div class="app-header has-back">
+          <button class="back-btn" onclick="goTo(5)">←</button>
+          <div class="app-name">GRU → LHR</div>
+          <div class="watch-status-badge badge-active" style="margin-left:auto">● active</div>
+        </div>
+        <div class="screen-body">
+          <div class="price-chart-container">
+            <div class="price-chart-header">
+              <div>
+                <div class="price-current-label">Best price · Search BC</div>
+                <div class="price-current">R$2.840</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:var(--muted)">30-day low</div>
+                <div style="font-size:13px;font-weight:600;color:var(--search)">R$2.540</div>
+              </div>
+            </div>
+            <div class="chart-bars">
+              <div class="bar" style="height:55%;background:var(--ledger)"></div>
+              <div class="bar" style="height:70%;background:var(--ledger)"></div>
+              <div class="bar" style="height:48%;background:var(--ledger)"></div>
+              <div class="bar" style="height:90%;background:var(--ledger)"></div>
+              <div class="bar" style="height:60%;background:var(--ledger)"></div>
+              <div class="bar" style="height:75%;background:var(--ledger)"></div>
+              <div class="bar" style="height:100%;background:var(--ledger)"></div>
+              <div class="bar" style="height:65%;background:var(--ledger)"></div>
+              <div class="bar" style="height:55%;background:var(--search)"></div>
+              <div class="bar" style="height:82%;background:var(--ledger)"></div>
+              <div class="bar" style="height:73%;background:var(--ledger)"></div>
+              <div class="bar" style="height:68%;background:var(--ledger)"></div>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-row-left">
+              <span class="detail-row-icon" style="color:var(--scheduler)">⏱</span>
+              <div>
+                <div style="font-size:11px;font-weight:600">Next search run</div>
+                <div class="detail-row-label">Scheduler BC · every 4 h</div>
+              </div>
+            </div>
+            <div class="detail-row-val" style="color:var(--scheduler)">1h 58m</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-row-left">
+              <span class="detail-row-icon" style="color:var(--ledger)">◈</span>
+              <div>
+                <div style="font-size:11px;font-weight:600">Cost per run</div>
+                <div class="detail-row-label">Ledger BC · debited on each run</div>
+              </div>
+            </div>
+            <div class="detail-row-val" style="color:var(--ledger)">1 credit</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-row-left">
+              <span class="detail-row-icon" style="color:var(--notif)">🔔</span>
+              <div>
+                <div style="font-size:11px;font-weight:600">Alert channel</div>
+                <div class="detail-row-label">Notification BC · push + email</div>
+              </div>
+            </div>
+            <div class="detail-row-val" style="color:var(--notif)">Push</div>
+          </div>
+          <div class="detail-row" style="margin-top:16px;border-color:rgba(239,68,68,.2)">
+            <div class="detail-row-left">
+              <span style="font-size:14px">🗑</span>
+              <div style="color:#EF4444;font-size:12px;font-weight:600">Cancel watch</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /s6 -->
+
+      <!-- ════ S7: PRICE ALERT ════ -->
+      <div class="screen" id="s7">
+        <div class="app-header has-back">
+          <button class="back-btn" onclick="goTo(6)">←</button>
+          <div class="app-name">Price Alert</div>
+        </div>
+        <div class="screen-body">
+          <div class="alert-push-notif">
+            <div class="alert-push-header">
+              <div class="alert-push-app-icon">✈</div>
+              <div class="alert-push-meta">
+                <div class="alert-push-app">SearchFly <span class="alert-push-time">just now</span></div>
+                <div class="alert-push-title">Price drop: GRU → LHR</div>
+              </div>
+            </div>
+            <div class="alert-push-body">↓ 23 % drop detected — now R$2.190. Tap to book.</div>
+            <div style="font-size:10px;color:var(--tag);font-family:'JetBrains Mono',monospace;margin-top:8px">AlertSent · Notification BC → expo-notifications</div>
+          </div>
+          <div class="price-drop-hero">
+            <div class="drop-badge">↓ 23% DROP · PriceDropDetected</div>
+            <div class="price-compare">
+              <div>
+                <div class="price-old">R$2.840</div>
+                <div style="font-size:9px;color:var(--muted)">was</div>
+              </div>
+              <div class="price-arrow">→</div>
+              <div>
+                <div class="price-new">R$2.190</div>
+                <div class="price-new-label">now</div>
+              </div>
+            </div>
+          </div>
+          <div class="section-head">Route <span class="bc-chip" style="color:var(--watch);border-color:rgba(168,85,247,.3)">Watch Mgmt</span></div>
+          <div class="detail-row">
+            <div class="detail-row-left">
+              <span class="detail-row-icon">✈</span>
+              <div>
+                <div style="font-size:11px;font-weight:600">GRU → LHR</div>
+                <div class="detail-row-label">2 Feb – 18 Feb · Economy</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" style="background:var(--search)">Book now →</button>
+          <button class="btn-secondary" onclick="goTo(6)">View watch detail</button>
+        </div>
+      </div><!-- /s7 -->
+
+    </div><!-- /screen-container -->
+
+    <!-- ════ GLOBAL BOTTOM NAV — fixed outside scrollable area ════ -->
+    <div id="global-nav">
+      <div class="nav-item active" id="nav-watches" onclick="goTo(3)">
+        <div class="nav-icon">🏠</div>
+        <div class="nav-label">Watches</div>
+      </div>
+      <div class="nav-item" id="nav-alerts" onclick="goTo(7)">
+        <div class="nav-icon">🔔</div>
+        <div class="nav-label">Alerts</div>
+      </div>
+      <div class="nav-item" id="nav-profile" onclick="goTo(2)">
+        <div class="nav-icon">👤</div>
+        <div class="nav-label">Profile</div>
+      </div>
+    </div>
+
+    <div class="home-ind"><div class="home-ind-bar"></div></div>
+  </div><!-- /phone -->
+</div><!-- /phone-wrap -->
+
+<!-- ── CONTROLS ── -->
+<div class="controls">
+  <button class="ctrl-btn" id="btn-prev" onclick="prev()" disabled>← prev</button>
+  <span class="screen-indicator" id="screen-ind">S1 / 7</span>
+  <button class="ctrl-btn" id="btn-next" onclick="next()">next →</button>
+</div>
+
+<script>
+let current = 1;
+const TOTAL = 7;
+
+// screens that show the global bottom nav
+const SHOW_NAV = [3,4,5,6,7];
+// nav active mapping
+const NAV_ACTIVE = { 3:'watches', 4:'watches', 5:'watches', 6:'watches', 7:'alerts' };
+
+function goTo(n) {
+  n = Math.max(1, Math.min(TOTAL, n));
+
+  // deactivate current
+  const prevScreen = document.getElementById('s'+current);
+  if (prevScreen) prevScreen.classList.remove('active');
+  const prevFs = document.getElementById('fs'+current);
+  if (prevFs) { prevFs.classList.remove('active'); prevFs.querySelector('.flow-dot').classList.remove('active'); }
+
+  current = n;
+
+  // activate new
+  const nextScreen = document.getElementById('s'+current);
+  if (nextScreen) { nextScreen.classList.add('active'); nextScreen.scrollTop = 0; }
+  const nextFs = document.getElementById('fs'+current);
+  if (nextFs) { nextFs.classList.add('active'); nextFs.querySelector('.flow-dot').classList.add('active'); }
+
+  // global nav visibility
+  const nav = document.getElementById('global-nav');
+  nav.style.display = SHOW_NAV.includes(current) ? 'flex' : 'none';
+
+  // nav active item
+  ['watches','alerts','profile'].forEach(id => {
+    document.getElementById('nav-'+id).classList.remove('active');
+  });
+  const activeNav = NAV_ACTIVE[current];
+  if (activeNav) document.getElementById('nav-'+activeNav).classList.add('active');
+
+  // controls
+  document.getElementById('btn-prev').disabled = current === 1;
+  document.getElementById('btn-next').disabled = current === TOTAL;
+  document.getElementById('screen-ind').textContent = 'S'+current+' / '+TOTAL;
+}
+
+function prev() { goTo(current - 1); }
+function next() { goTo(current + 1); }
+
+// init: hide nav on login screen
+goTo(1);
+</script>
+</body>
+</html>
+
+</body></html>

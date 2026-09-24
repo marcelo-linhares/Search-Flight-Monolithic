@@ -1,0 +1,436 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SearchFly — Solution Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg:       #0C1018;
+  --bg-card:  #131825;
+  --bg-inner: #0A0E18;
+  --border:   #1C2438;
+  --text:     #EDF0F7;
+  --muted:    #8493AC;
+  --dim:      #3A4560;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:#EEF1F8; --bg-card:#FFFFFF; --bg-inner:#E8EDF8;
+    --border:#D0D8EC; --text:#111827; --muted:#596480; --dim:#B8C4D8;
+  }
+}
+:root[data-theme="light"] {
+  --bg:#EEF1F8; --bg-card:#FFFFFF; --bg-inner:#E8EDF8;
+  --border:#D0D8EC; --text:#111827; --muted:#596480; --dim:#B8C4D8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 32px 20px 56px;
+  max-width: 980px;
+  margin-inline: auto;
+  -webkit-font-smoothing: antialiased;
+}
+.page-header { margin-bottom: 28px; }
+.eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+}
+.page-title { font-size: 20px; font-weight: 700; }
+.page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+figure { margin: 0; }
+figure svg { max-width: 100%; height: auto; display: block; }
+figcaption {
+  font-size: 12px; color: var(--muted); margin-top: 12px;
+  text-align: center; line-height: 1.6;
+}
+
+.steps-section { margin-top: 36px; }
+.steps-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+}
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 620px) { .steps-grid { grid-template-columns: 1fr; } }
+
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px 16px;
+}
+.step-phase {
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+}
+.step-bcs { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 7px; }
+.step-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+.step-desc code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  background: var(--bg-inner);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  color: var(--text);
+}
+
+.xc-section { margin-top: 28px; }
+.xc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (max-width: 500px) { .xc-grid { grid-template-columns: 1fr; } }
+.xc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.xc-icon {
+  font-size: 16px; flex-shrink: 0; margin-top: 1px;
+}
+.xc-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.xc-desc { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.xc-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  background: var(--bg-inner); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 4px; color: var(--text);
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="eyebrow">SearchFly · DDD Monolith — Lena / Platform Engineering</div>
+  <div class="page-title">Solution Architecture — Macro View</div>
+  <div class="page-sub">Node.js monolith · 8 bounded contexts · in-process EventEmitter bus</div>
+</div>
+
+<figure>
+<svg viewBox="0 0 900 622" role="img"
+  aria-label="SearchFly macro architecture: HTTP API and Stripe Webhook at the top enter the Node.js monolith containing 8 bounded contexts in three rows connected by an in-process EventEmitter bus, with Postgres, Stripe, Amadeus/Duffel and FCM/Email as external infrastructure at the bottom.">
+<defs>
+  <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L7,3 z" fill="#3A4560"/>
+  </marker>
+  <marker id="arr-b" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L7,3 z" fill="#4A90E2"/>
+  </marker>
+  <marker id="arr-s" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L7,3 z" fill="#22C55E" opacity=".7"/>
+  </marker>
+</defs>
+
+<!-- ═══ API ENTRY POINTS ═══ -->
+<rect x="48" y="16" width="215" height="46" rx="7" fill="#131825" stroke="#1C2438" stroke-width="1.2"/>
+<text x="155" y="35" text-anchor="middle" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">HTTP REST API</text>
+<text x="155" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" fill="#8493AC">Express / Fastify · /api/v1</text>
+
+<rect x="636" y="16" width="218" height="46" rx="7" fill="#131825" stroke="#1C2438" stroke-width="1.2"/>
+<text x="745" y="35" text-anchor="middle" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Stripe Webhook</text>
+<text x="745" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" fill="#8493AC">/webhook/stripe · sig verify</text>
+
+<!-- connectors API → monolith -->
+<line x1="155" y1="62" x2="155" y2="94" stroke="#3A4560" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="745" y1="62" x2="745" y2="94" stroke="#3A4560" stroke-width="1.2" marker-end="url(#arr)"/>
+
+<!-- ═══ MONOLITH BOUNDARY ═══ -->
+<rect x="16" y="94" width="868" height="410" rx="10"
+  fill="#0A0E18" stroke="#2A3654" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="28" y="111" font-family="Inter,system-ui" font-size="9.5" font-weight="700"
+  letter-spacing=".1em" fill="#2A3654">NODE.JS MONOLITH</text>
+
+<!-- ═══ ROW LABEL 1 ═══ -->
+<text x="32" y="131" font-family="Inter,system-ui" font-size="9" font-weight="600"
+  letter-spacing=".08em" fill="#3A4560">USER DOMAIN</text>
+
+<!-- ── Watch Management ── -->
+<rect x="30" y="138" width="238" height="84" rx="7"
+  fill="#1A0F2E" stroke="#A855F7" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="48" cy="156" r="4" fill="#A855F7"/>
+<text x="60" y="159" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Watch Management</text>
+<text x="48" y="177" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">WatchRequest · SearchPolicy · WatchStatus</text>
+<text x="48" y="190" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">WatchExpiry · WatchSuspendedDueToCredits</text>
+<text x="48" y="203" font-family="JetBrains Mono,monospace" font-size="9" fill="#A855F7">WatchReactivated ←── key reactivation event</text>
+<!-- P1 badge -->
+<rect x="222" y="141" width="40" height="16" rx="4"
+  fill="#A855F7" fill-opacity=".16" stroke="#A855F7" stroke-width="1" stroke-opacity=".4"/>
+<text x="242" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#A855F7">P1</text>
+
+<!-- ── Billing ── -->
+<rect x="296" y="138" width="214" height="84" rx="7"
+  fill="#2D0A1E" stroke="#EC4899" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="314" cy="156" r="4" fill="#EC4899"/>
+<text x="326" y="159" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Billing</text>
+<text x="314" y="177" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">CreditPack · PaymentIntent · Invoice</text>
+<text x="314" y="190" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">WebhookEvent</text>
+<text x="314" y="203" font-family="JetBrains Mono,monospace" font-size="9" fill="#EC4899">CreditsPurchased → feeds Ledger</text>
+<!-- P1 badge -->
+<rect x="464" y="141" width="40" height="16" rx="4"
+  fill="#EC4899" fill-opacity=".16" stroke="#EC4899" stroke-width="1" stroke-opacity=".4"/>
+<text x="484" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#EC4899">P1</text>
+
+<!-- ── Ledger ── -->
+<rect x="538" y="138" width="244" height="84" rx="7"
+  fill="#0A1F2E" stroke="#06B6D4" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="556" cy="156" r="4" fill="#06B6D4"/>
+<text x="568" y="159" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Ledger</text>
+<text x="556" y="177" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">CreditBalance · CreditEntry · Reservation</text>
+<text x="556" y="190" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">BalanceVersion (optimistic lock)</text>
+<text x="556" y="203" font-family="JetBrains Mono,monospace" font-size="9" fill="#06B6D4">BalanceRestored → 0→positive only</text>
+<!-- P1 badge -->
+<rect x="736" y="141" width="40" height="16" rx="4"
+  fill="#06B6D4" fill-opacity=".16" stroke="#06B6D4" stroke-width="1" stroke-opacity=".4"/>
+<text x="756" y="152" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#06B6D4">P1</text>
+
+<!-- ═══ EVENT BUS ═══ -->
+<!-- vertical stubs down from Row 1 to bus -->
+<line x1="149" y1="222" x2="149" y2="238" stroke="#A855F7" stroke-width="1.5" stroke-opacity=".5"/>
+<line x1="403" y1="222" x2="403" y2="238" stroke="#EC4899" stroke-width="1.5" stroke-opacity=".5"/>
+<line x1="660" y1="222" x2="660" y2="238" stroke="#06B6D4" stroke-width="1.5" stroke-opacity=".5"/>
+
+<!-- Bus bar -->
+<rect x="30" y="238" width="840" height="26" rx="5"
+  fill="#080C16" stroke="#2A3654" stroke-width="1"/>
+<text x="450" y="254" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="10" font-weight="600" fill="#4A90E2" letter-spacing=".06em">
+  ⚡  EventEmitter Bus  —  in-process · zero serialization · safeListener() wraps all handlers
+</text>
+
+<!-- vertical stubs from bus down to Row 2 -->
+<line x1="130" y1="264" x2="130" y2="280" stroke="#10B981" stroke-width="1.5" stroke-opacity=".5"/>
+<line x1="316" y1="264" x2="316" y2="280" stroke="#22C55E" stroke-width="1.5" stroke-opacity=".5"/>
+<line x1="572" y1="264" x2="572" y2="280" stroke="#F97316" stroke-width="1.5" stroke-opacity=".5"/>
+<line x1="770" y1="264" x2="770" y2="280" stroke="#EAB308" stroke-width="1.5" stroke-opacity=".5"/>
+
+<!-- ═══ ROW LABEL 2 ═══ -->
+<text x="32" y="278" font-family="Inter,system-ui" font-size="9" font-weight="600"
+  letter-spacing=".08em" fill="#3A4560">EXECUTION LAYER</text>
+
+<!-- ── Scheduler ── -->
+<rect x="30" y="284" width="196" height="82" rx="7"
+  fill="#0A1F1A" stroke="#10B981" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="48" cy="301" r="4" fill="#10B981"/>
+<text x="60" y="304" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Scheduler</text>
+<text x="48" y="322" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">SearchJob · TriggerPolicy</text>
+<text x="48" y="335" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">CronExpression</text>
+<text x="48" y="348" font-family="JetBrains Mono,monospace" font-size="9" fill="#10B981">node-cron + boot catch-up</text>
+<!-- P2 badge -->
+<rect x="180" y="287" width="40" height="16" rx="4"
+  fill="#10B981" fill-opacity=".16" stroke="#10B981" stroke-width="1" stroke-opacity=".4"/>
+<text x="200" y="298" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#10B981">P2</text>
+
+<!-- ── Search ── -->
+<rect x="250" y="284" width="196" height="82" rx="7"
+  fill="#0A1F12" stroke="#22C55E" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="268" cy="301" r="4" fill="#22C55E"/>
+<text x="280" y="304" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Search</text>
+<text x="268" y="322" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">PriceSnapshot · RouteVO</text>
+<text x="268" y="335" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">SearchResult</text>
+<text x="268" y="348" font-family="JetBrains Mono,monospace" font-size="9" fill="#22C55E">FlightResultFetched</text>
+<!-- P2 badge -->
+<rect x="400" y="287" width="40" height="16" rx="4"
+  fill="#22C55E" fill-opacity=".16" stroke="#22C55E" stroke-width="1" stroke-opacity=".4"/>
+<text x="420" y="298" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#22C55E">P2</text>
+
+<!-- ── Pricing ── -->
+<rect x="470" y="284" width="196" height="82" rx="7"
+  fill="#1F1208" stroke="#F97316" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="488" cy="301" r="4" fill="#F97316"/>
+<text x="500" y="304" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Pricing</text>
+<text x="488" y="322" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">PriceHistory · PriceDrop</text>
+<text x="488" y="335" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">Threshold · Anomaly</text>
+<text x="488" y="348" font-family="JetBrains Mono,monospace" font-size="9" fill="#F97316">PriceDropDetected</text>
+<!-- P3 badge -->
+<rect x="620" y="287" width="40" height="16" rx="4"
+  fill="#F97316" fill-opacity=".16" stroke="#F97316" stroke-width="1" stroke-opacity=".4"/>
+<text x="640" y="298" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#F97316">P3</text>
+
+<!-- ── Notification ── -->
+<rect x="688" y="284" width="190" height="82" rx="7"
+  fill="#1F1A08" stroke="#EAB308" stroke-width="1.2" stroke-opacity=".55"/>
+<circle cx="706" cy="301" r="4" fill="#EAB308"/>
+<text x="718" y="304" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Notification</text>
+<text x="706" y="322" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">Alert · Channel · Digest</text>
+<text x="706" y="335" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">Preference</text>
+<text x="706" y="348" font-family="JetBrains Mono,monospace" font-size="9" fill="#EAB308">AlertSent</text>
+<!-- P3 badge -->
+<rect x="832" y="287" width="40" height="16" rx="4"
+  fill="#EAB308" fill-opacity=".16" stroke="#EAB308" stroke-width="1" stroke-opacity=".4"/>
+<text x="852" y="298" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#EAB308">P3</text>
+
+<!-- Search → Integration arrow (direct call, not via bus) -->
+<line x1="348" y1="366" x2="348" y2="380" stroke="#22C55E" stroke-width="1.2"
+  stroke-opacity=".5" marker-end="url(#arr-s)"/>
+<text x="356" y="376" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#22C55E" fill-opacity=".6">calls port</text>
+
+<!-- ═══ ROW 3 — ACL ═══ -->
+<text x="32" y="380" font-family="Inter,system-ui" font-size="9" font-weight="600"
+  letter-spacing=".08em" fill="#3A4560">ANTI-CORRUPTION LAYER</text>
+
+<rect x="30" y="386" width="840" height="62" rx="7"
+  fill="#0E1020" stroke="#6366F1" stroke-width="1.2" stroke-opacity=".5"/>
+<circle cx="48" cy="403" r="4" fill="#6366F1"/>
+<text x="60" y="407" font-family="Inter,system-ui" font-size="12" font-weight="600" fill="#EDF0F7">Integration</text>
+<text x="48" y="424" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">FlightPort (domain interface) · ApiAdapter · RateLimit · ResponseMapper</text>
+<text x="48" y="437" font-family="JetBrains Mono,monospace" font-size="9" fill="#6366F1">Shields all BCs from external API churn — Amadeus, Duffel, or any future provider plug in here</text>
+<!-- P2 badge -->
+<rect x="824" y="389" width="40" height="16" rx="4"
+  fill="#6366F1" fill-opacity=".16" stroke="#6366F1" stroke-width="1" stroke-opacity=".4"/>
+<text x="844" y="400" text-anchor="middle" font-family="JetBrains Mono,monospace"
+  font-size="9" font-weight="700" fill="#6366F1">P2</text>
+
+<!-- connector: monolith → infra (vertical lines) -->
+<line x1="145" y1="504" x2="145" y2="524" stroke="#3A4560" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="365" y1="504" x2="365" y2="524" stroke="#3A4560" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="590" y1="504" x2="590" y2="524" stroke="#3A4560" stroke-width="1.2" marker-end="url(#arr)"/>
+<line x1="800" y1="504" x2="800" y2="524" stroke="#3A4560" stroke-width="1.2" marker-end="url(#arr)"/>
+
+<!-- ═══ INFRA LABEL ═══ -->
+<text x="16" y="522" font-family="Inter,system-ui" font-size="9" font-weight="600"
+  letter-spacing=".08em" fill="#3A4560">INFRASTRUCTURE</text>
+
+<!-- ── Postgres ── -->
+<rect x="40" y="526" width="212" height="62" rx="7" fill="#131825" stroke="#1C2438" stroke-width="1.2"/>
+<text x="146" y="547" text-anchor="middle" font-family="Inter,system-ui" font-size="11" font-weight="600" fill="#EDF0F7">PostgreSQL</text>
+<text x="146" y="563" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">all BC repos · shared DB</text>
+<text x="146" y="576" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">BC-namespaced tables</text>
+
+<!-- ── Stripe ── -->
+<rect x="268" y="526" width="196" height="62" rx="7" fill="#131825" stroke="#1C2438" stroke-width="1.2"/>
+<text x="366" y="547" text-anchor="middle" font-family="Inter,system-ui" font-size="11" font-weight="600" fill="#EDF0F7">Stripe</text>
+<text x="366" y="563" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">payments + webhooks</text>
+<text x="366" y="576" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#EC4899">Billing BC only</text>
+
+<!-- ── Amadeus / Duffel ── -->
+<rect x="480" y="526" width="222" height="62" rx="7" fill="#131825" stroke="#1C2438" stroke-width="1.2"/>
+<text x="591" y="547" text-anchor="middle" font-family="Inter,system-ui" font-size="11" font-weight="600" fill="#EDF0F7">Amadeus / Duffel</text>
+<text x="591" y="563" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">flight data APIs</text>
+<text x="591" y="576" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#6366F1">Integration BC only (ACL)</text>
+
+<!-- ── FCM / Email ── -->
+<rect x="718" y="526" width="166" height="62" rx="7" fill="#131825" stroke="#1C2438" stroke-width="1.2"/>
+<text x="801" y="547" text-anchor="middle" font-family="Inter,system-ui" font-size="11" font-weight="600" fill="#EDF0F7">FCM / Email</text>
+<text x="801" y="563" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#8493AC">push + email delivery</text>
+<text x="801" y="576" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#EAB308">Notification BC only</text>
+
+</svg>
+
+<figcaption>
+  All 8 BCs share one OS process. The EventEmitter bus is a plain Node.js <code>EventEmitter</code> — no broker, no network hop, no JSON serialization.<br>
+  Integration is called directly (port interface) by Search, not via the bus. P1–P3 badges show the recommended build sequence.
+</figcaption>
+</figure>
+
+<!-- Implementation Phases -->
+<div class="steps-section">
+  <div class="steps-eyebrow">Implementation Sequence — derived from event storm</div>
+  <div class="steps-grid">
+
+    <div class="step-card">
+      <div class="step-phase" style="color:#A855F7">Phase 1 · Foundation</div>
+      <div class="step-bcs">Watch Mgmt · Billing · Ledger</div>
+      <div class="step-desc">
+        Stand up the credit lifecycle before anything fires. User creates a watch →
+        Billing handles the Stripe payment → Ledger records the balance.
+        Implement <code>BalanceVersion</code> optimistic lock for concurrent debit safety
+        and the <code>WatchSuspendedDueToCredits</code> / <code>WatchReactivated</code>
+        reactivation flow from the start.
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-phase" style="color:#10B981">Phase 2 · Execution</div>
+      <div class="step-bcs">Scheduler · Integration · Search</div>
+      <div class="step-desc">
+        Wire the autonomous search loop. <code>node-cron</code> fires <code>SearchJob</code>
+        → Ledger authorises the spend (reservation) → Search calls Integration's
+        <code>FlightPort</code> → results come back as <code>FlightResultFetched</code>.
+        Add boot catch-up so missed cron ticks recover on restart.
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-phase" style="color:#F97316">Phase 3 · Intelligence</div>
+      <div class="step-bcs">Pricing · Notification</div>
+      <div class="step-desc">
+        Add the value layer. Pricing compares snapshots and emits
+        <code>PriceDropDetected</code>. Notification receives it and fires
+        <code>AlertSent</code> via email or push. Also fires
+        <code>WatchSuspendedDueToCredits</code> alert when the Ledger signals credit
+        exhaustion — the user-facing payoff of Phase 1.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Cross-cutting concerns -->
+<div class="xc-section">
+  <div class="steps-eyebrow" style="margin-top:28px">Cross-cutting concerns</div>
+  <div class="xc-grid">
+
+    <div class="xc-card">
+      <div class="xc-icon">🛡️</div>
+      <div>
+        <div class="xc-name"><code class="xc-code">safeListener(handler)</code></div>
+        <div class="xc-desc">Wraps every async EventEmitter subscriber so an unhandled promise rejection in one BC doesn't crash the process or silently swallow the error. Applied at every <code>bus.on(...)</code> registration.</div>
+      </div>
+    </div>
+
+    <div class="xc-card">
+      <div class="xc-icon">🔒</div>
+      <div>
+        <div class="xc-name"><code class="xc-code">BalanceVersion</code> optimistic lock</div>
+        <div class="xc-desc">Prevents double-spend on concurrent search jobs. The Ledger appends <code>BalanceVersion</code> to every debit and uses a SQL <code>WHERE version = $v</code> check before committing a reservation.</div>
+      </div>
+    </div>
+
+    <div class="xc-card">
+      <div class="xc-icon">⏰</div>
+      <div>
+        <div class="xc-name">Scheduler boot catch-up</div>
+        <div class="xc-desc">On every process start, the Scheduler queries all active watches whose next-run timestamp is in the past and fires them immediately — ensures no watch silently skips a cycle after a deploy or crash.</div>
+      </div>
+    </div>
+
+    <div class="xc-card">
+      <div class="xc-icon">🗄️</div>
+      <div>
+        <div class="xc-name">Shared DB, BC-namespaced tables</div>
+        <div class="xc-desc">All BCs hit the same Postgres instance (monolith convenience), but each owns its table namespace — <code>ledger.*</code>, <code>watch.*</code>, <code>billing.*</code> etc. No cross-BC joins; integration via events only.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
+
+</body></html>

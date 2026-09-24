@@ -1,0 +1,415 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SearchFly — Full-Stack Architecture</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0C1018;display:flex;flex-direction:column;align-items:center;
+       min-height:100vh;padding:28px 12px 52px;font-family:Inter,system-ui,sans-serif}
+  figure{width:100%;max-width:1440px}
+  svg{width:100%;height:auto;display:block}
+  figcaption{margin-top:12px;color:#5C6D87;font-size:11px;
+             font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<figure>
+<svg viewBox="0 0 1400 890" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="SearchFly full-stack architecture — Mobile, Transport, and API Monolith layers with WatchSuspendedDueToCredits P0 flow">
+<defs>
+  <!-- arrowheads -->
+  <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M0,1 L9,5 L0,9 Z" fill="#4A5568"/>
+  </marker>
+  <marker id="ay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,1 L9,5 L0,9 Z" fill="#EAB308"/>
+  </marker>
+  <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,1 L9,5 L0,9 Z" fill="#F97316"/>
+  </marker>
+  <marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M0,1 L9,5 L0,9 Z" fill="#8493AC"/>
+  </marker>
+  <!-- gradient for logo "Fly" -->
+  <linearGradient id="gfly" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#EC4899"/>
+    <stop offset="100%" stop-color="#F97316"/>
+  </linearGradient>
+  <!-- P0 flow highlight gradient -->
+  <linearGradient id="gp0" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#F97316" stop-opacity=".15"/>
+    <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+
+<!-- ══════════════════════ TITLE ROW ══════════════════════ -->
+<!-- mini logo mark -->
+<g transform="translate(555,12)">
+  <circle cx="11.5" cy="11.5" r="10" stroke="#A855F7" stroke-width="2.3" fill="none"/>
+  <path d="M3.5,13.5 C6,4 18,5 20.5,11" stroke="#F97316" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <circle cx="3.5" cy="13.5" r="1.8" fill="#EC4899"/>
+  <polygon points="18,8 23.5,11.5 19.5,15 16,11.5" fill="#F97316"/>
+  <polygon points="19.5,15 24,13 23.5,11.5" fill="#EC4899" opacity=".85"/>
+  <line x1="19.5" y1="19" x2="25" y2="24.5" stroke="#EC4899" stroke-width="2.3" stroke-linecap="round"/>
+</g>
+<text x="580" y="29" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="700" fill="#8493AC">Search</text>
+<text x="622" y="29" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="700" fill="url(#gfly)">Fly</text>
+<text x="648" y="29" font-family="Inter,system-ui,sans-serif" font-size="13" fill="#5C6D87"> — Full-Stack Architecture · DDD Monolith</text>
+<text x="1380" y="29" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#3A4558">v1 · Sept 2026</text>
+
+<!-- ══════════════════════ MOBILE LAYER ══════════════════════ -->
+<!-- layer background -->
+<rect x="16" y="48" width="1368" height="248" rx="10" fill="#0A0E18" stroke="#A855F7" stroke-width="1.4" stroke-opacity=".35"/>
+<!-- layer badge -->
+<rect x="24" y="54" width="110" height="18" rx="4" fill="#A855F7" fill-opacity=".18"/>
+<text x="79" y="67" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#A855F7" letter-spacing=".1em">MOBILE</text>
+<text x="140" y="67" font-family="'JetBrains Mono',monospace" font-size="9" fill="#4A5568">Expo RN · Expo Router · Zustand stores · apps/mobile/modules/</text>
+
+<!-- ─── 6 BC module boxes ─── -->
+<!-- Coordinates: x=[36,254,472,690,908,1126]  cx=[129,347,565,783,1001,1219]  box w=188 gap=30 -->
+
+<!-- watch/ -->
+<rect x="36" y="78" width="188" height="95" rx="7" fill="#131825" stroke="#A855F7" stroke-width="1.5"/>
+<rect x="36" y="78" width="188" height="20" rx="7" fill="#A855F7" fill-opacity=".12"/>
+<rect x="36" y="90" width="188" height="8" fill="#A855F7" fill-opacity=".12"/>
+<text x="130" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#A855F7">watch/</text>
+<text x="130" y="112" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">screens/ · components/</text>
+<text x="130" y="126" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">store.ts · events.ts</text>
+<text x="130" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#A855F7" fill-opacity=".7">useWatchStore()</text>
+<text x="130" y="158" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#5C6D87">WatchList · WatchDetail · SuspendCard</text>
+
+<!-- billing/ -->
+<rect x="254" y="78" width="188" height="95" rx="7" fill="#131825" stroke="#EC4899" stroke-width="1.5"/>
+<rect x="254" y="78" width="188" height="20" rx="7" fill="#EC4899" fill-opacity=".12"/>
+<rect x="254" y="90" width="188" height="8" fill="#EC4899" fill-opacity=".12"/>
+<text x="348" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#EC4899">billing/</text>
+<text x="348" y="112" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">screens/ · components/</text>
+<text x="348" y="126" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">store.ts · events.ts</text>
+<text x="348" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#EC4899" fill-opacity=".7">useBillingStore()</text>
+<text x="348" y="158" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#5C6D87">BuyCredits · PackList · PayConfirm</text>
+
+<!-- ledger/ -->
+<rect x="472" y="78" width="188" height="95" rx="7" fill="#131825" stroke="#06B6D4" stroke-width="1.5"/>
+<rect x="472" y="78" width="188" height="20" rx="7" fill="#06B6D4" fill-opacity=".12"/>
+<rect x="472" y="90" width="188" height="8" fill="#06B6D4" fill-opacity=".12"/>
+<text x="566" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#06B6D4">ledger/</text>
+<text x="566" y="112" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">screens/ · components/</text>
+<text x="566" y="126" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">store.ts · events.ts</text>
+<text x="566" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#06B6D4" fill-opacity=".7">useLedgerStore()</text>
+<text x="566" y="158" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#5C6D87">CreditBalance · DebitHistory</text>
+
+<!-- notification/ -->
+<rect x="690" y="78" width="188" height="95" rx="7" fill="#131825" stroke="#EAB308" stroke-width="1.5"/>
+<rect x="690" y="78" width="188" height="20" rx="7" fill="#EAB308" fill-opacity=".12"/>
+<rect x="690" y="90" width="188" height="8" fill="#EAB308" fill-opacity=".12"/>
+<text x="784" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#EAB308">notification/</text>
+<text x="784" y="112" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">screens/ · components/</text>
+<text x="784" y="126" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">store.ts · events.ts</text>
+<text x="784" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#EAB308" fill-opacity=".7">useNotifStore()</text>
+<text x="784" y="158" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#5C6D87">AlertInbox · ChannelPrefs</text>
+
+<!-- search/ -->
+<rect x="908" y="78" width="188" height="95" rx="7" fill="#131825" stroke="#22C55E" stroke-width="1.5"/>
+<rect x="908" y="78" width="188" height="20" rx="7" fill="#22C55E" fill-opacity=".12"/>
+<rect x="908" y="90" width="188" height="8" fill="#22C55E" fill-opacity=".12"/>
+<text x="1002" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#22C55E">search/</text>
+<text x="1002" y="112" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">screens/ · components/</text>
+<text x="1002" y="126" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">store.ts · events.ts</text>
+<text x="1002" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#22C55E" fill-opacity=".7">useSearchStore()</text>
+<text x="1002" y="158" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#5C6D87">PriceChart · SearchHistory</text>
+
+<!-- pricing/ -->
+<rect x="1126" y="78" width="188" height="95" rx="7" fill="#131825" stroke="#F97316" stroke-width="1.5"/>
+<rect x="1126" y="78" width="188" height="20" rx="7" fill="#F97316" fill-opacity=".12"/>
+<rect x="1126" y="90" width="188" height="8" fill="#F97316" fill-opacity=".12"/>
+<text x="1220" y="93" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#F97316">pricing/</text>
+<text x="1220" y="112" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">screens/ · components/</text>
+<text x="1220" y="126" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">store.ts · events.ts</text>
+<text x="1220" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#F97316" fill-opacity=".7">usePricingStore()</text>
+<text x="1220" y="158" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#5C6D87">DropBadge · AnomalyIndicator</text>
+
+<!-- ─── Client EventBus bar ─── -->
+<rect x="36" y="188" width="1278" height="44" rx="7" fill="#0F1728" stroke="#6366F1" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="700" y="205" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#6366F1">Client EventBus</text>
+<text x="795" y="205" font-family="Inter,system-ui,sans-serif" font-size="9.5" fill="#8493AC"> · shared/bus/index.ts · Zustand · useBus()</text>
+<text x="700" y="222" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#4A5568">emits: WatchReactivated · WatchSuspendedDueToCredits · BalanceRestored · PriceDropDetected · AlertReceived</text>
+
+<!-- ── module → EventBus short connector lines ── -->
+<line x1="130" y1="173" x2="130" y2="188" stroke="#A855F7" stroke-width="1" stroke-opacity=".4"/>
+<line x1="348" y1="173" x2="348" y2="188" stroke="#EC4899" stroke-width="1" stroke-opacity=".4"/>
+<line x1="566" y1="173" x2="566" y2="188" stroke="#06B6D4" stroke-width="1" stroke-opacity=".4"/>
+<line x1="784" y1="173" x2="784" y2="188" stroke="#EAB308" stroke-width="1" stroke-opacity=".4"/>
+<line x1="1002" y1="173" x2="1002" y2="188" stroke="#22C55E" stroke-width="1" stroke-opacity=".4"/>
+<line x1="1220" y1="173" x2="1220" y2="188" stroke="#F97316" stroke-width="1" stroke-opacity=".4"/>
+
+<!-- ══════════════════════ TRANSPORT ZONE ══════════════════════ -->
+<!-- Consolidated transport bar -->
+<rect x="36" y="312" width="1278" height="48" rx="8" fill="#0F1520" stroke="#1C2438" stroke-width="1.5"/>
+<!-- internal divider between REST and Push zones -->
+<line x1="890" y1="312" x2="890" y2="360" stroke="#1C2438" stroke-width="1.5"/>
+<!-- REST label -->
+<text x="460" y="330" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#8493AC" letter-spacing=".06em">HTTPS · REST API</text>
+<text x="460" y="349" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#4A5568">packages/api-client/{bc}.ts · typed fetch · request ↕ response</text>
+<!-- Push label -->
+<text x="1090" y="330" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#EAB308" letter-spacing=".06em">Push Channel</text>
+<text x="1090" y="349" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#4A5568">expo-notifications · APNs / FCM · server → client</text>
+
+<!-- ── Mobile → Transport (REST) downward arrows ── -->
+<!-- Each module's REST call, routed through EventBus area -->
+<line x1="130" y1="232" x2="130" y2="312" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="348" y1="232" x2="348" y2="312" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="566" y1="232" x2="566" y2="312" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<!-- notif module goes to REST too -->
+<line x1="784" y1="232" x2="784" y2="312" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<!-- search, pricing angle left to stay in REST zone -->
+<path d="M1002,232 C1002,280 820,280 820,312" stroke="#4A5568" stroke-width="1" fill="none" marker-end="url(#ag)"/>
+<path d="M1220,232 C1220,275 860,275 860,312" stroke="#4A5568" stroke-width="1" fill="none" marker-end="url(#ag)"/>
+
+<!-- label on REST arrows -->
+<text x="680" y="273" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#3A4558">REST calls</text>
+
+<!-- ══════════════════════ MONOLITH LAYER ══════════════════════ -->
+<rect x="16" y="374" width="1368" height="360" rx="10" fill="#0A0E18" stroke="#10B981" stroke-width="1.4" stroke-opacity=".35"/>
+<!-- layer badge -->
+<rect x="24" y="380" width="155" height="18" rx="4" fill="#10B981" fill-opacity=".15"/>
+<text x="101" y="393" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#10B981" letter-spacing=".1em">API MONOLITH</text>
+<text x="186" y="393" font-family="'JetBrains Mono',monospace" font-size="9" fill="#4A5568">Node.js · DDD · apps/api/src/modules/   ·   8 Bounded Contexts</text>
+
+<!-- ─── 8 Server BC boxes ─── -->
+<!-- x=[24,178,332,486,640,794,948,1102]  cx=[101,255,409,563,717,871,1025,1179]  w=149 gap=5 -->
+
+<!-- Watch Management BC -->
+<rect x="24" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#A855F7" stroke-width="1.5"/>
+<rect x="24" y="406" width="149" height="18" rx="6" fill="#A855F7" fill-opacity=".15"/>
+<rect x="24" y="416" width="149" height="8" fill="#A855F7" fill-opacity=".15"/>
+<text x="99" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#A855F7">Watch Mgmt</text>
+<text x="99" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">WatchRepository</text>
+<text x="99" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">SuspendWatch</text>
+<text x="99" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">ReactivateWatch</text>
+<text x="99" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">WatchSuspended·</text>
+<text x="99" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">DueToCredits ↑</text>
+
+<!-- Billing BC -->
+<rect x="178" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#EC4899" stroke-width="1.5"/>
+<rect x="178" y="406" width="149" height="18" rx="6" fill="#EC4899" fill-opacity=".15"/>
+<rect x="178" y="416" width="149" height="8" fill="#EC4899" fill-opacity=".15"/>
+<text x="253" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#EC4899">Billing</text>
+<text x="253" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">CreditPack entity</text>
+<text x="253" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">PurchaseCredits</text>
+<text x="253" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">InvoiceHistory</text>
+<text x="253" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">→ Stripe Checkout</text>
+<text x="253" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">CreditsPurchased ↑</text>
+
+<!-- Ledger BC -->
+<rect x="332" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#06B6D4" stroke-width="1.5"/>
+<rect x="332" y="406" width="149" height="18" rx="6" fill="#06B6D4" fill-opacity=".15"/>
+<rect x="332" y="416" width="149" height="8" fill="#06B6D4" fill-opacity=".15"/>
+<text x="407" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#06B6D4">Ledger</text>
+<text x="407" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">CreditBalance</text>
+<text x="407" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">DebitCredits</text>
+<text x="407" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">CreditHistory</text>
+<text x="407" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">BalanceRestored ↑</text>
+<text x="407" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">BalanceExhausted ↑</text>
+
+<!-- Scheduler BC -->
+<rect x="486" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#10B981" stroke-width="1.5"/>
+<rect x="486" y="406" width="149" height="18" rx="6" fill="#10B981" fill-opacity=".15"/>
+<rect x="486" y="416" width="149" height="8" fill="#10B981" fill-opacity=".15"/>
+<text x="561" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#10B981">Scheduler</text>
+<text x="561" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">cron / task queue</text>
+<text x="561" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">TriggerSearch</text>
+<text x="561" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">WatchExpiry check</text>
+<text x="561" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">no direct REST</text>
+<text x="561" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">SearchTriggered ↑</text>
+
+<!-- Search BC -->
+<rect x="640" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#22C55E" stroke-width="1.5"/>
+<rect x="640" y="406" width="149" height="18" rx="6" fill="#22C55E" fill-opacity=".15"/>
+<rect x="640" y="416" width="149" height="8" fill="#22C55E" fill-opacity=".15"/>
+<text x="715" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#22C55E">Search</text>
+<text x="715" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">RunSearch</text>
+<text x="715" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">PriceSnapshot</text>
+<text x="715" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">PriceHistory</text>
+<text x="715" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">→ Integration BC</text>
+<text x="715" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">SearchCompleted ↑</text>
+
+<!-- Pricing BC -->
+<rect x="794" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#F97316" stroke-width="1.5"/>
+<rect x="794" y="406" width="149" height="18" rx="6" fill="#F97316" fill-opacity=".15"/>
+<rect x="794" y="416" width="149" height="8" fill="#F97316" fill-opacity=".15"/>
+<text x="869" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#F97316">Pricing</text>
+<text x="869" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">DetectPriceDrop</text>
+<text x="869" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">AnomalyDetect</text>
+<text x="869" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">DropThreshold</text>
+<text x="869" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">listens: SearchCompleted</text>
+<text x="869" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">PriceDropDetected ↑</text>
+
+<!-- Notification BC -->
+<rect x="948" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#EAB308" stroke-width="1.5"/>
+<rect x="948" y="406" width="149" height="18" rx="6" fill="#EAB308" fill-opacity=".15"/>
+<rect x="948" y="416" width="149" height="8" fill="#EAB308" fill-opacity=".15"/>
+<text x="1023" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#EAB308">Notification</text>
+<text x="1023" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">FireAlert</text>
+<text x="1023" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">ChannelPrefs</text>
+<text x="1023" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">AlertHistory</text>
+<text x="1023" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">→ push / email</text>
+<text x="1023" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">AlertSent ↑</text>
+
+<!-- Integration BC -->
+<rect x="1102" y="406" width="149" height="100" rx="6" fill="#131825" stroke="#6366F1" stroke-width="1.5"/>
+<rect x="1102" y="406" width="149" height="18" rx="6" fill="#6366F1" fill-opacity=".15"/>
+<rect x="1102" y="416" width="149" height="8" fill="#6366F1" fill-opacity=".15"/>
+<text x="1177" y="420" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#6366F1">Integration</text>
+<text x="1177" y="437" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">FlightProvider</text>
+<text x="1177" y="451" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">adapter pattern</text>
+<text x="1177" y="465" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#8493AC">Amadeus / Duffel</text>
+<text x="1177" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">no REST surface</text>
+<text x="1177" y="492" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#5C6D87">internal only</text>
+
+<!-- ─── Server EventEmitter bus bar ─── -->
+<rect x="24" y="522" width="1278" height="42" rx="7" fill="#0F1728" stroke="#10B981" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="700" y="539" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#10B981">Node.js EventEmitter</text>
+<text x="830" y="539" font-family="Inter,system-ui,sans-serif" font-size="9.5" fill="#8493AC"> · src/bus/index.ts · in-process · synchronous</text>
+<text x="700" y="555" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#4A5568">all BCs subscribe · events: WatchSuspendedDueToCredits · PriceDropDetected · SearchTriggered · BalanceExhausted · AlertSent</text>
+
+<!-- ── BC boxes → EventEmitter (short downward lines) ── -->
+<line x1="99" y1="506" x2="99" y2="522" stroke="#A855F7" stroke-width="1" stroke-opacity=".5"/>
+<line x1="253" y1="506" x2="253" y2="522" stroke="#EC4899" stroke-width="1" stroke-opacity=".5"/>
+<line x1="407" y1="506" x2="407" y2="522" stroke="#06B6D4" stroke-width="1" stroke-opacity=".5"/>
+<line x1="561" y1="506" x2="561" y2="522" stroke="#10B981" stroke-width="1" stroke-opacity=".5"/>
+<line x1="715" y1="506" x2="715" y2="522" stroke="#22C55E" stroke-width="1" stroke-opacity=".5"/>
+<line x1="869" y1="506" x2="869" y2="522" stroke="#F97316" stroke-width="1" stroke-opacity=".5"/>
+<line x1="1023" y1="506" x2="1023" y2="522" stroke="#EAB308" stroke-width="1" stroke-opacity=".5"/>
+<line x1="1177" y1="506" x2="1177" y2="522" stroke="#6366F1" stroke-width="1" stroke-opacity=".5"/>
+
+<!-- ─── External services ─── -->
+<!-- Stripe -->
+<rect x="24" y="586" width="195" height="65" rx="7" fill="#131825" stroke="#EC4899" stroke-width="1.5" stroke-dasharray="4,3"/>
+<text x="122" y="608" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#EC4899">Stripe API</text>
+<text x="122" y="626" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">Checkout · Webhooks</text>
+<text x="122" y="642" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#5C6D87">payment.confirmed → CreditsPurchased</text>
+<line x1="253" y1="564" x2="253" y2="586" stroke="#EC4899" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#am)"/>
+
+<!-- PostgreSQL -->
+<rect x="573" y="586" width="155" height="65" rx="7" fill="#131825" stroke="#4A5568" stroke-width="1.2" stroke-dasharray="4,3"/>
+<text x="650" y="608" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#8493AC">PostgreSQL</text>
+<text x="650" y="626" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">all BC aggregates</text>
+<text x="650" y="642" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#5C6D87">schema per BC</text>
+<line x1="650" y1="564" x2="650" y2="586" stroke="#4A5568" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#am)"/>
+
+<!-- Flight Provider -->
+<rect x="1150" y="586" width="195" height="65" rx="7" fill="#131825" stroke="#6366F1" stroke-width="1.5" stroke-dasharray="4,3"/>
+<text x="1248" y="608" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#6366F1">Flight API</text>
+<text x="1248" y="626" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">Amadeus / Duffel</text>
+<text x="1248" y="642" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#5C6D87">via Integration BC adapter</text>
+<line x1="1177" y1="564" x2="1248" y2="586" stroke="#6366F1" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#am)"/>
+
+<!-- ── Transport → Monolith (REST) arrows ── -->
+<line x1="130" y1="360" x2="130" y2="406" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="348" y1="360" x2="253" y2="406" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="566" y1="360" x2="407" y2="406" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="784" y1="360" x2="715" y2="406" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="820" y1="360" x2="869" y2="406" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+<line x1="860" y1="360" x2="1023" y2="406" stroke="#4A5568" stroke-width="1" marker-end="url(#ag)"/>
+
+<!-- label REST arrows from transport to BCs -->
+<text x="400" y="386" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#3A4558">HTTP routes</text>
+
+<!-- ══════════════════════ PUSH NOTIFICATION FLOW ══════════════════════ -->
+<!-- Arrow: Notification BC top → push zone (transport bar) → notification module -->
+<!-- Goes through push zone (right side of transport bar) then up to notification module -->
+<path d="M1023,406 L1023,360 C1023,285 784,295 784,232"
+      stroke="#EAB308" stroke-width="1.8" fill="none" stroke-dasharray="7,4"
+      marker-end="url(#ay)"/>
+<!-- push label -->
+<text x="960" y="345" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EAB308">push · APNs/FCM</text>
+<text x="960" y="358" font-family="Inter,system-ui,sans-serif" font-size="7.5" fill="#4A5568">server → client</text>
+
+<!-- ══════════════════════ P0 FLOW HIGHLIGHT ══════════════════════ -->
+<!-- WatchSuspendedDueToCredits event round-trip -->
+<!-- Highlight steps: Ledger→EventEmitter→WatchMgmt→EventEmitter→Notification→Push→notifModule→EventBus→watchModule -->
+
+<!-- ① Ledger BC emits BalanceExhausted → EventEmitter → Watch Mgmt BC reacts -->
+<path d="M407,522 C407,540 99,540 99,522" stroke="#F97316" stroke-width="2" fill="none" stroke-dasharray="none" marker-end="url(#ao)"/>
+<circle cx="253" cy="536" r="7" fill="#F97316"/>
+<text x="253" y="540" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" font-weight="700" fill="#0C1018">①</text>
+<!-- small label -->
+<text x="253" y="553" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#F97316">BalanceExhausted</text>
+
+<!-- ② Watch Mgmt BC emits WatchSuspendedDueToCredits → EventEmitter → Notification BC -->
+<path d="M99,522 C99,540 1023,540 1023,522" stroke="#F97316" stroke-width="2" fill="none" marker-end="url(#ao)"/>
+<circle cx="561" cy="545" r="7" fill="#F97316"/>
+<text x="561" y="549" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" font-weight="700" fill="#0C1018">②</text>
+<text x="561" y="562" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#F97316">WatchSuspendedDueToCredits</text>
+
+<!-- ③ Notification BC fires push (already drawn as yellow dashed arrow; add circle) -->
+<circle cx="1023" cy="383" r="7" fill="#F97316"/>
+<text x="1023" y="387" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" font-weight="700" fill="#0C1018">③</text>
+
+<!-- ④ notification module → Client EventBus (already connected via short line) -->
+<circle cx="784" cy="242" r="7" fill="#F97316"/>
+<text x="784" y="246" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" font-weight="700" fill="#0C1018">④</text>
+
+<!-- ⑤ EventBus → watch module (horizontal flow in bus) -->
+<path d="M680,210 L200,210" stroke="#F97316" stroke-width="1.5" fill="none" marker-end="url(#ao)"/>
+<circle cx="440" cy="210" r="7" fill="#F97316"/>
+<text x="440" y="214" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" font-weight="700" fill="#0C1018">⑤</text>
+<!-- ⑤ label -->
+<text x="440" y="225" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7" fill="#F97316">watch/store.ts → suspended_credits</text>
+
+<!-- ══════════════════════ P0 FLOW LEGEND BOX ══════════════════════ -->
+<rect x="24" y="666" width="540" height="90" rx="8" fill="#0F1520" stroke="#F97316" stroke-width="1.2" stroke-opacity=".5"/>
+<rect x="24" y="666" width="540" height="20" rx="8" fill="#F97316" fill-opacity=".1"/>
+<text x="294" y="681" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#F97316">P0 Flow: WatchSuspendedDueToCredits</text>
+<text x="36" y="700" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">① Scheduler triggers search → Search debits Ledger → BalanceExhausted emitted</text>
+<text x="36" y="716" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">② Watch Mgmt suspends watch → WatchSuspendedDueToCredits emitted on EventEmitter</text>
+<text x="36" y="732" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">③ Notification BC fires push (APNs/FCM)  ④ expo-notifications → notification/store</text>
+<text x="36" y="748" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">⑤ Client EventBus emits → watch/store.ts updates card state to <tspan font-family="'JetBrains Mono',monospace" fill="#A855F7">suspended_credits</tspan></text>
+
+<!-- ══════════════════════ BC COLOR LEGEND ══════════════════════ -->
+<rect x="590" y="666" width="790" height="90" rx="8" fill="#0F1520" stroke="#1C2438" stroke-width="1.2"/>
+<text x="984" y="681" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#5C6D87">Bounded Contexts</text>
+
+<!-- Row 1 of BC legend -->
+<circle cx="608" cy="698" r="5" fill="#A855F7"/><text x="620" y="702" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Watch Mgmt</text>
+<circle cx="718" cy="698" r="5" fill="#EC4899"/><text x="730" y="702" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Billing</text>
+<circle cx="798" cy="698" r="5" fill="#06B6D4"/><text x="810" y="702" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Ledger</text>
+<circle cx="888" cy="698" r="5" fill="#10B981"/><text x="900" y="702" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Scheduler</text>
+<!-- Row 2 -->
+<circle cx="608" cy="720" r="5" fill="#22C55E"/><text x="620" y="724" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Search</text>
+<circle cx="718" cy="720" r="5" fill="#F97316"/><text x="730" y="724" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Pricing</text>
+<circle cx="798" cy="720" r="5" fill="#EAB308"/><text x="810" y="724" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Notification</text>
+<circle cx="888" cy="720" r="5" fill="#6366F1"/><text x="900" y="724" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#EDF0F7">Integration</text>
+<!-- line types -->
+<line x1="1000" y1="698" x2="1040" y2="698" stroke="#4A5568" stroke-width="1.5" marker-end="url(#am)"/>
+<text x="1048" y="702" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">REST call</text>
+<line x1="1105" y1="698" x2="1145" y2="698" stroke="#EAB308" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ay)"/>
+<text x="1153" y="702" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">Push</text>
+<line x1="1000" y1="720" x2="1040" y2="720" stroke="#F97316" stroke-width="1.5" marker-end="url(#ao)"/>
+<text x="1048" y="724" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">P0 flow</text>
+<line x1="1105" y1="720" x2="1145" y2="720" stroke="#4A5568" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#am)"/>
+<text x="1153" y="724" font-family="Inter,system-ui,sans-serif" font-size="8.5" fill="#8493AC">external</text>
+
+<!-- ── Monolith layer closing label (bottom of rect) ── -->
+<rect x="980" y="748" width="400" height="14" rx="4" fill="#10B981" fill-opacity=".08"/>
+<text x="1180" y="759" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#10B981" fill-opacity=".7">apps/api/ · Node.js monolith · DDD bounded contexts</text>
+
+<!-- ── Mobile layer bottom hint ── -->
+<rect x="20" y="280" width="210" height="14" rx="4" fill="#A855F7" fill-opacity=".08"/>
+<text x="125" y="291" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#A855F7" fill-opacity=".7">apps/mobile/ · Expo Managed</text>
+
+<!-- ── Monorepo callout ── -->
+<rect x="1155" y="770" width="225" height="36" rx="6" fill="#131825" stroke="#1C2438" stroke-width="1"/>
+<text x="1268" y="784" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8.5" fill="#5C6D87">Yarn Workspaces</text>
+<text x="1268" y="800" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="8" fill="#3A4558">packages/ui · packages/domain-events</text>
+
+</svg>
+<figcaption>SearchFly · Full-Stack Architecture · Mobile (Expo RN) + Transport + API Monolith (Node.js DDD) · generated Sept 2026</figcaption>
+</figure>
+</body>
+</html>
+
+</body></html>
