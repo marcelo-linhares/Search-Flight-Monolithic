@@ -91,13 +91,33 @@ Desde a sessão de *Event Storm* até agora, a evolução usando IA foi absurdam
 
 Até aqui, além dos agentes para o debate do *Event Storm*, foram criados dois novos agentes:
 
-* Sofia - agente UX
-* Novo skill de frontend para a Lena, responsável pela engenharia de plataforma do projeto
+1. Sofia - agente UX
+2. Novo skill de frontend para a Lena, responsável pela engenharia de plataforma do projeto
 
 Em relação ao tema do TCC, noto que cada vez a complexidade da aplicação é facilitada pelo claro desenho de contexto.
 
 -
 
 ---
+
+## Entrada 5 — 2026-09-24 20h e 2026-09-29 09h30m
+
+Após a sessão de event storming (esse é o termo correto), criamos alguns protótipos e wireframe.
+Ajudou muito a tangibilizar o que é o caminho feliz e um dos caminhos tristes (P0: Credit Exhaustion & Reactivation) do cliente.
+O modelo de domínios também segue contribuindo com outras etapas do desenvolvimento.
+Fiz criamos outros diagramas com base no modelo de domínios, contextos delimitados e linguagem ubíqua.
+Novos artefatos gerados com essas infos:
+- Frontend Architecture
+- Full-stack Architecture
+- Solution Architecture
+
+Adicionalmente, seguimos criando o primeiro repo de frontend, um monorepo que codifica as primeiras telas.
+Importante ressaltar que a definição de organização do código, mesmo sendo monolito, está fazendo a diferença inclusive agora durante a criação desse código.
+A IA contextualizada com o bounded contexts + formato de organização dos repos, tem conseguido resolver com duas ou três interações todo o código.
+
+Próximos passos:
+- Criar o código de Billing
+- Criar os testes para esses códigos.
+- Iniciar a refatoração de um dos contextos para microsserviço.
 
 
