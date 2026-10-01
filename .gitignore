@@ -35,3 +35,7 @@ filesBL/              # migrar para src/ antes de deletar
 files.zip
 filesBL.zip
 *.zip
+# monorepo / expo
+.expo/
+web-build/
+.yarn/

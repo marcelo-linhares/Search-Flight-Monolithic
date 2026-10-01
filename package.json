@@ -1,23 +1,17 @@
 {
   "name": "searchfly",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-  "test":             "jest --selectProjects unit integration",
-  "test:unit":        "jest --selectProjects unit --watch",
-  "test:integration": "jest --selectProjects integration",
-  "test:stage":       "jest --selectProjects stage",
-  "test:all":         "jest",
-  "test:coverage":    "jest --selectProjects unit integration --coverage"
+    "api:test": "yarn workspace @searchfly/api test",
+    "mobile": "yarn workspace @searchfly/mobile start",
+    "typecheck": "yarn workspaces run typecheck"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "jest": "^30.4.2"
+    "typescript": "~5.3.3"
   }
 }
