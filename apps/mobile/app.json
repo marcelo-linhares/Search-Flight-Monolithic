@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "SearchFly",
+    "slug": "searchfly",
+    "scheme": "searchfly",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0C1018",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.searchfly.mobile"
+    },
+    "android": {
+      "package": "app.searchfly.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0C1018"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#0C1018",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#A855F7"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SearchFly uses your location to suggest the nearest departure airport."
+        }
+      ]
+    ],
+    "icon": "./assets/icon.png"
+  }
+}
