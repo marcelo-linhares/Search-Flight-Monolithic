@@ -259,3 +259,25 @@ See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for:
 **Refactored**: May 7, 2026  
 **Style**: Monolithic + DDD Bounded Contexts  
 **Ready for**: Scaling, team growth, microservices migration
+
+
+---
+
+## Update - Monorepo restructuring (October 2026)
+
+The backend now lives in a Yarn-workspaces monorepo (branch `chore/monorepo-skeleton`). The code was moved with `git mv`, so history is preserved.
+
+| Before | After |
+|--------|-------|
+| `src/` | `apps/api/src/` |
+| `tests/` | `apps/api/tests/` |
+| `examples/` | `apps/api/examples/` |
+| `package.json`, `package-lock.json`, `jest.config.js`, `Dockerfile` | `apps/api/` (same names) |
+| - | `apps/mobile/` (Expo RN client), `packages/{domain-events,ui,config}/`, `brand/` |
+
+`packages/domain-events` holds the DTOs and the client-visible domain events shared by the monolith and the mobile app.
+Server-internal events (for example `BalanceExhausted`) stay inside the monolith.
+
+**Note on the structure shown above:** the tree in the first section describes the original design (`src/contexts/BillingLedger/...`,
+`src/shared/...`). The code currently on this branch is flatter (`src/billing/application/handlers.js`,
+`src/billing/domain/{aggregates,events,value-objects}.js`). Reconcile the two before the next refactoring step.
