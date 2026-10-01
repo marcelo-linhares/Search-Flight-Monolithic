@@ -27,6 +27,7 @@ docker build -t searchfly-api apps/api
 ```bash
 yarn install       # from the repo root
 yarn typecheck
+yarn mobile        # Expo dev server (mock backend by default) — see apps/mobile/README.md
 ```
 
 ## Branches
