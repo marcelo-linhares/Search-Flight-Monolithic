@@ -1,0 +1,13 @@
+{
+  "name": "@searchfly/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "tsconfig.base.json",
+    "prettier.json"
+  ],
+  "scripts": {
+    "typecheck": "echo ok",
+    "lint": "echo ok"
+  }
+}

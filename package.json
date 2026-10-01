@@ -1,0 +1,17 @@
+{
+  "name": "searchfly",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:test": "yarn workspace @searchfly/api test",
+    "mobile": "yarn workspace @searchfly/mobile start",
+    "typecheck": "yarn workspaces run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "~5.3.3"
+  }
+}
