@@ -1,0 +1,23 @@
+{
+  "name": "searchfly",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+  "test":             "jest --selectProjects unit integration",
+  "test:unit":        "jest --selectProjects unit --watch",
+  "test:integration": "jest --selectProjects integration",
+  "test:stage":       "jest --selectProjects stage",
+  "test:all":         "jest",
+  "test:coverage":    "jest --selectProjects unit integration --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}

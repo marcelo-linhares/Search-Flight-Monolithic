@@ -1,0 +1,1461 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SearchFly — P0: Credit Exhaustion & Reactivation</title>
+<style>
+  :root {
+    --bg:          #0C1018;
+    --bg-card:     #131825;
+    --bg-tag:      #0A0E18;
+    --border:      #1C2438;
+    --border-card: #1D2540;
+    --text:        #EDF0F7;
+    --text-muted:  #8493AC;
+    --text-tag:    #5C6D87;
+    --text-link:   #5C7FBF;
+    --c-watch:     #A855F7;
+    --c-search:    #22C55E;
+    --c-scheduler: #10B981;
+    --c-pricing:   #F97316;
+    --c-notif:     #EAB308;
+    --c-integ:     #6366F1;
+    --c-billing:   #EC4899;
+    --c-ledger:    #06B6D4;
+    --c-danger:    #EF4444;
+    --c-suspended: #F97316;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+
+  /* ── header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 36px;
+    max-width: 900px;
+    width: 100%;
+  }
+  .page-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .page-header .path-label {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--c-suspended);
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.25);
+    border-radius: 4px;
+    padding: 2px 8px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── flow map ── */
+  .flow-map {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 14px;
+    padding: 20px 24px;
+    max-width: 900px;
+    width: 100%;
+    margin-bottom: 40px;
+    overflow-x: auto;
+  }
+  .flow-map-title {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tag);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .flow-svg-wrap { width: 100%; min-width: 680px; }
+
+  /* ── screen nav ── */
+  .screen-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 900px;
+    width: 100%;
+    margin-bottom: 28px;
+  }
+  .nav-dot {
+    height: 6px;
+    width: 24px;
+    border-radius: 3px;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s, width 0.2s;
+  }
+  .nav-dot.active { background: var(--c-suspended); width: 32px; }
+
+  /* ── screen label ── */
+  .screen-label {
+    text-align: center;
+    max-width: 900px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .screen-label .s-num {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tag);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .screen-label .s-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .screen-label .s-bc {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 4px;
+  }
+
+  /* ── prev/next ── */
+  .screen-controls {
+    display: flex;
+    gap: 12px;
+    max-width: 900px;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .ctrl-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 6px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .ctrl-btn:hover { border-color: var(--c-suspended); color: var(--text); }
+  .ctrl-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* ── phone frame ── */
+  .phone-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .phone {
+    width: 375px;
+    min-height: 720px;
+    background: var(--bg);
+    border: 2px solid var(--border-card);
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1px #0C1018, 0 24px 80px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-notch {
+    background: #070B12;
+    height: 48px;
+    border-radius: 0 0 20px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px 0 24px;
+    flex-shrink: 0;
+  }
+  .phone-notch .status-time {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .phone-notch .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .phone-notch .status-icons span {
+    font-size: 11px;
+    color: var(--text);
+  }
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.visible { display: flex; }
+
+  /* ── app bar ── */
+  .app-bar {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .app-bar .app-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .app-bar .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-link);
+    font-size: 14px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+  }
+  .app-bar .back-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .app-bar .screen-action-btn {
+    background: var(--bg-tag);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ── ledger widget ── */
+  .ledger-widget {
+    margin: 0 20px 16px;
+    background: rgba(6,182,212,0.08);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .ledger-widget.low {
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.3);
+  }
+  .ledger-widget.zero {
+    background: rgba(249,115,22,0.08);
+    border-color: rgba(249,115,22,0.3);
+  }
+  .ledger-widget .lw-label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--c-ledger);
+    margin-bottom: 2px;
+  }
+  .ledger-widget.low .lw-label { color: var(--c-danger); }
+  .ledger-widget.zero .lw-label { color: var(--c-suspended); }
+  .ledger-widget .lw-balance {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--c-ledger);
+  }
+  .ledger-widget.low .lw-balance { color: var(--c-danger); }
+  .ledger-widget.zero .lw-balance { color: var(--c-suspended); }
+  .ledger-widget .lw-warn {
+    font-size: 11px;
+    color: var(--c-danger);
+    margin-top: 2px;
+  }
+  .ledger-widget.zero .lw-warn { color: var(--c-suspended); }
+  .lw-topup-btn {
+    background: var(--c-billing);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  /* ── suspended banner ── */
+  .suspended-banner {
+    margin: 0 20px 16px;
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.35);
+    border-radius: 12px;
+    padding: 12px 16px;
+    flex-shrink: 0;
+  }
+  .suspended-banner .sb-event {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--c-suspended);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+  .suspended-banner .sb-msg {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .suspended-banner .sb-msg strong { color: var(--c-suspended); }
+  .sb-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .sb-cta {
+    background: var(--c-billing);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .sb-dismiss {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ── watch card ── */
+  .section-label {
+    padding: 0 20px 8px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tag);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    flex-shrink: 0;
+  }
+  .watch-card {
+    margin: 0 20px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .watch-card:hover { border-color: var(--c-watch); }
+  .watch-card.suspended {
+    border-color: rgba(249,115,22,0.4);
+    opacity: 0.85;
+  }
+  .watch-card.suspended:hover { border-color: var(--c-suspended); }
+  .watch-card.reactivated { border-color: rgba(168,85,247,0.3); }
+  .watch-card .wc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .watch-card .wc-route {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .status-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: lowercase;
+  }
+  .status-active { background: rgba(34,197,94,0.12); color: var(--c-search); }
+  .status-suspended { background: rgba(249,115,22,0.12); color: var(--c-suspended); }
+  .watch-card .wc-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .watch-card .wc-price-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .wc-price { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .wc-price-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .wc-sparkline {
+    width: 80px;
+    height: 32px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .wc-sparkline .bar { flex: 1; border-radius: 2px 2px 0 0; opacity: 0.7; }
+  .watch-card .wc-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .wc-footer-left { font-size: 11px; color: var(--text-muted); }
+  .wc-topup-inline {
+    background: var(--c-billing);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .wc-credit-chip {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--c-ledger);
+    background: rgba(6,182,212,0.1);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 20px;
+    padding: 2px 7px;
+  }
+
+  /* ── notification inbox ── */
+  .notif-card {
+    margin: 0 20px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 14px;
+    padding: 14px 16px;
+    flex-shrink: 0;
+  }
+  .notif-card.unread { border-left: 3px solid var(--c-suspended); }
+  .notif-card.info { border-left: 3px solid var(--c-notif); }
+  .notif-card.success-border { border-left: 3px solid var(--c-search); }
+  .notif-card .nc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .nc-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .nc-icon.warn { background: rgba(249,115,22,0.15); }
+  .nc-icon.info { background: rgba(234,179,8,0.15); }
+  .nc-icon.success { background: rgba(34,197,94,0.15); }
+  .nc-icon.watch { background: rgba(168,85,247,0.15); }
+  .notif-card .nc-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .notif-card .nc-time { font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  .notif-card .nc-body { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .notif-card .nc-event {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tag);
+    margin-top: 6px;
+  }
+  .nc-action-btn {
+    margin-top: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-link);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ── billing / credit packs ── */
+  .billing-header {
+    padding: 0 20px 16px;
+    flex-shrink: 0;
+  }
+  .billing-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .billing-header p { font-size: 13px; color: var(--text-muted); }
+  .pack-card {
+    margin: 0 20px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .pack-card:hover { border-color: var(--c-billing); }
+  .pack-card.selected {
+    border-color: var(--c-billing);
+    background: rgba(236,72,153,0.07);
+  }
+  .pack-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(236,72,153,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .pack-info { flex: 1; }
+  .pack-info .pi-name { font-size: 14px; font-weight: 700; }
+  .pack-info .pi-credits {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--c-ledger);
+    margin-top: 1px;
+  }
+  .pack-info .pi-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .pack-price { font-size: 18px; font-weight: 700; text-align: right; }
+  .pack-price .pp-per { font-size: 10px; color: var(--text-muted); font-weight: 400; font-family: 'JetBrains Mono', monospace; display: block; }
+  .pack-badge {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--c-billing);
+    background: rgba(236,72,153,0.12);
+    border: 1px solid rgba(236,72,153,0.25);
+    border-radius: 20px;
+    padding: 2px 7px;
+  }
+  .pack-card { position: relative; }
+  .billing-cta-wrap {
+    padding: 16px 20px 0;
+    flex-shrink: 0;
+  }
+  .billing-cta {
+    width: 100%;
+    background: var(--c-billing);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: -0.2px;
+  }
+  .billing-cta:disabled { opacity: 0.4; }
+  .billing-cta span { font-size: 12px; font-weight: 400; display: block; opacity: 0.8; margin-top: 2px; }
+  .stripe-note {
+    padding: 10px 20px 0;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* ── payment confirmation ── */
+  .confirm-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 24px 32px;
+    text-align: center;
+  }
+  .confirm-icon {
+    width: 80px;
+    height: 80px;
+    background: rgba(34,197,94,0.12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin-bottom: 20px;
+    border: 2px solid rgba(34,197,94,0.25);
+  }
+  .confirm-hero h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .confirm-hero p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+  .confirm-events {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: left;
+    margin-bottom: 24px;
+  }
+  .ce-label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-tag);
+    margin-bottom: 10px;
+  }
+  .ce-event {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .ce-event:last-child { border-bottom: none; }
+  .ce-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ce-name {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    flex: 1;
+  }
+  .ce-check { font-size: 12px; color: var(--c-search); }
+  .confirm-balance {
+    width: 100%;
+    background: rgba(6,182,212,0.08);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .cb-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--c-ledger); }
+  .cb-value { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--c-ledger); }
+  .confirm-cta {
+    width: 100%;
+    background: var(--c-watch);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ── reactivated watch list ── */
+  .reactivated-banner {
+    margin: 0 20px 16px;
+    background: rgba(168,85,247,0.08);
+    border: 1px solid rgba(168,85,247,0.25);
+    border-radius: 12px;
+    padding: 12px 16px;
+    flex-shrink: 0;
+  }
+  .rb-event {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--c-watch);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+  .rb-msg { font-size: 13px; color: var(--text); line-height: 1.4; }
+
+  /* ── bottom nav ── */
+  .bottom-nav {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 20px;
+    flex-shrink: 0;
+  }
+  .bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  .bn-icon {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+  .bn-icon.active { stroke: var(--c-watch); }
+  .bn-icon.notif-active { stroke: var(--c-notif); }
+  .bn-icon.billing-active { stroke: var(--c-billing); }
+  .bn-label { font-size: 10px; color: var(--text-muted); }
+  .bn-label.active { color: var(--c-watch); }
+  .bn-label.notif-active { color: var(--c-notif); }
+  .bn-label.billing-active { color: var(--c-billing); }
+
+  /* ── notif badge ── */
+  .nav-notif-badge {
+    position: relative;
+    display: inline-block;
+  }
+  .nav-notif-badge::after {
+    content: '1';
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    background: var(--c-danger);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── bc footer ── */
+  .bc-footer {
+    max-width: 900px;
+    width: 100%;
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+  .bc-footer-title {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tag);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .bc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .bc-chip {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    opacity: 0.7;
+  }
+  .bc-chip.dim { opacity: 0.3; }
+
+  /* ── scroll padding ── */
+  .scroll-pad { height: 12px; flex-shrink: 0; }
+
+  /* ── LOGO WRAP ── */
+  .logo-wrap { display:flex; align-items:center; }
+
+  /* ── GLOBAL BOTTOM NAV ── */
+  #p0-global-nav {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 20px;
+    flex-shrink: 0;
+  }
+  #p0-global-nav .bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  #p0-global-nav .bn-icon { width:22px;height:22px;fill:none;stroke:var(--text-muted);stroke-width:1.8;stroke-linecap:round; }
+  #p0-global-nav .bn-icon.p0-active { stroke:var(--c-watch); }
+  #p0-global-nav .bn-icon.p0-billing { stroke:var(--c-billing); }
+  #p0-global-nav .bn-icon.p0-notif  { stroke:var(--c-notif); }
+  #p0-global-nav .bn-label { font-size:10px;color:var(--text-muted); }
+  #p0-global-nav .bn-label.p0-active  { color:var(--c-watch); }
+  #p0-global-nav .bn-label.p0-billing { color:var(--c-billing); }
+  #p0-global-nav .bn-label.p0-notif   { color:var(--c-notif); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>SearchFly — Unhappy Path P0</h1>
+  <span class="path-label">⚡ CREDIT EXHAUSTION → WATCH REACTIVATION</span>
+</div>
+
+<!-- FLOW MAP SVG -->
+<div class="flow-map">
+  <div class="flow-map-title">Screen Flow — Domain Events</div>
+  <div class="flow-svg-wrap">
+    <svg viewBox="0 0 860 120" role="img" aria-label="P0 flow: Watch List (active, low credits) to suspended banner to Notification inbox to Buy Credits to Payment Confirmation to Watch List reactivated" style="width:100%;height:auto;display:block;">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+          <polygon points="0 0,8 3.5,0 7" fill="#8493AC"/>
+        </marker>
+        <marker id="arr-sus" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+          <polygon points="0 0,8 3.5,0 7" fill="#F97316"/>
+        </marker>
+        <marker id="arr-ok" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+          <polygon points="0 0,8 3.5,0 7" fill="#22C55E"/>
+        </marker>
+        <marker id="arr-w" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+          <polygon points="0 0,8 3.5,0 7" fill="#A855F7"/>
+        </marker>
+        <marker id="arr-b" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+          <polygon points="0 0,8 3.5,0 7" fill="#EC4899"/>
+        </marker>
+      </defs>
+
+      <!-- Screen boxes -->
+      <!-- S1: Watch List low -->
+      <rect x="2" y="32" width="104" height="44" rx="8" fill="#131825" stroke="#1D2540" stroke-width="1.2"/>
+      <text x="54" y="50" text-anchor="middle" fill="#EDF0F7" font-size="9.5" font-family="Inter,sans-serif" font-weight="600">Watch List</text>
+      <text x="54" y="63" text-anchor="middle" fill="#F97316" font-size="8.5" font-family="JetBrains Mono,monospace">low credits</text>
+      <text x="54" y="74" text-anchor="middle" fill="#5C6D87" font-size="7.5" font-family="JetBrains Mono,monospace">S1</text>
+
+      <!-- S2: Suspended -->
+      <rect x="152" y="32" width="104" height="44" rx="8" fill="#131825" stroke="rgba(249,115,22,0.5)" stroke-width="1.2"/>
+      <text x="204" y="50" text-anchor="middle" fill="#EDF0F7" font-size="9.5" font-family="Inter,sans-serif" font-weight="600">Watch List</text>
+      <text x="204" y="63" text-anchor="middle" fill="#F97316" font-size="8.5" font-family="JetBrains Mono,monospace">suspended</text>
+      <text x="204" y="74" text-anchor="middle" fill="#5C6D87" font-size="7.5" font-family="JetBrains Mono,monospace">S2</text>
+
+      <!-- S3: Notif Inbox -->
+      <rect x="302" y="32" width="104" height="44" rx="8" fill="#131825" stroke="rgba(234,179,8,0.35)" stroke-width="1.2"/>
+      <text x="354" y="50" text-anchor="middle" fill="#EDF0F7" font-size="9.5" font-family="Inter,sans-serif" font-weight="600">Notification</text>
+      <text x="354" y="63" text-anchor="middle" fill="#EAB308" font-size="8.5" font-family="JetBrains Mono,monospace">inbox</text>
+      <text x="354" y="74" text-anchor="middle" fill="#5C6D87" font-size="7.5" font-family="JetBrains Mono,monospace">S3</text>
+
+      <!-- S4: Buy Credits -->
+      <rect x="452" y="32" width="104" height="44" rx="8" fill="#131825" stroke="rgba(236,72,153,0.4)" stroke-width="1.2"/>
+      <text x="504" y="50" text-anchor="middle" fill="#EDF0F7" font-size="9.5" font-family="Inter,sans-serif" font-weight="600">Buy Credits</text>
+      <text x="504" y="63" text-anchor="middle" fill="#EC4899" font-size="8.5" font-family="JetBrains Mono,monospace">Billing</text>
+      <text x="504" y="74" text-anchor="middle" fill="#5C6D87" font-size="7.5" font-family="JetBrains Mono,monospace">S4</text>
+
+      <!-- S5: Payment Confirm -->
+      <rect x="602" y="32" width="104" height="44" rx="8" fill="#131825" stroke="rgba(34,197,94,0.35)" stroke-width="1.2"/>
+      <text x="654" y="50" text-anchor="middle" fill="#EDF0F7" font-size="9.5" font-family="Inter,sans-serif" font-weight="600">Confirmation</text>
+      <text x="654" y="63" text-anchor="middle" fill="#22C55E" font-size="8.5" font-family="JetBrains Mono,monospace">CreditsPurchased</text>
+      <text x="654" y="74" text-anchor="middle" fill="#5C6D87" font-size="7.5" font-family="JetBrains Mono,monospace">S5</text>
+
+      <!-- S6: Reactivated -->
+      <rect x="752" y="32" width="104" height="44" rx="8" fill="#131825" stroke="rgba(168,85,247,0.4)" stroke-width="1.2"/>
+      <text x="804" y="50" text-anchor="middle" fill="#EDF0F7" font-size="9.5" font-family="Inter,sans-serif" font-weight="600">Watch List</text>
+      <text x="804" y="63" text-anchor="middle" fill="#A855F7" font-size="8.5" font-family="JetBrains Mono,monospace">reactivated</text>
+      <text x="804" y="74" text-anchor="middle" fill="#5C6D87" font-size="7.5" font-family="JetBrains Mono,monospace">S6</text>
+
+      <!-- Arrows -->
+      <!-- S1 → S2: WatchSuspendedDueToCredits (system auto) -->
+      <line x1="107" y1="54" x2="149" y2="54" stroke="#F97316" stroke-width="1.3" marker-end="url(#arr-sus)"/>
+      <text x="128" y="46" text-anchor="middle" fill="#F97316" font-size="7" font-family="JetBrains Mono,monospace">WatchSuspended</text>
+      <text x="128" y="55" text-anchor="middle" fill="#F97316" font-size="7" font-family="JetBrains Mono,monospace">DueToCredits</text>
+
+      <!-- S2 → S3: user taps notification -->
+      <line x1="257" y1="54" x2="299" y2="54" stroke="#EAB308" stroke-width="1.3" marker-end="url(#arr)"/>
+      <text x="278" y="46" text-anchor="middle" fill="#EAB308" font-size="7" font-family="JetBrains Mono,monospace">alert delivered</text>
+      <text x="278" y="54.5" text-anchor="middle" fill="#5C6D87" font-size="7" font-family="JetBrains Mono,monospace">(tap push)</text>
+
+      <!-- S3 → S4: user taps Top Up -->
+      <line x1="407" y1="54" x2="449" y2="54" stroke="#EC4899" stroke-width="1.3" marker-end="url(#arr-b)"/>
+      <text x="428" y="46" text-anchor="middle" fill="#EC4899" font-size="7" font-family="JetBrains Mono,monospace">tap "Top up"</text>
+      <text x="428" y="54.5" text-anchor="middle" fill="#5C6D87" font-size="7" font-family="JetBrains Mono,monospace">→ Billing</text>
+
+      <!-- S4 → S5: CreditsPurchased -->
+      <line x1="557" y1="54" x2="599" y2="54" stroke="#22C55E" stroke-width="1.3" marker-end="url(#arr-ok)"/>
+      <text x="578" y="46" text-anchor="middle" fill="#22C55E" font-size="7" font-family="JetBrains Mono,monospace">CreditsPurchased</text>
+      <text x="578" y="54.5" text-anchor="middle" fill="#22C55E" font-size="7" font-family="JetBrains Mono,monospace">BalanceRestored</text>
+
+      <!-- S5 → S6: WatchReactivated -->
+      <line x1="707" y1="54" x2="749" y2="54" stroke="#A855F7" stroke-width="1.3" marker-end="url(#arr-w)"/>
+      <text x="728" y="46" text-anchor="middle" fill="#A855F7" font-size="7" font-family="JetBrains Mono,monospace">WatchReactivated</text>
+      <text x="728" y="55" text-anchor="middle" fill="#5C6D87" font-size="7" font-family="JetBrains Mono,monospace">(system auto)</text>
+
+      <!-- S2 → S4: shortcut via CTA on suspended card -->
+      <path d="M 204 76 Q 204 108 504 108 Q 504 76 504 77" stroke="#EC4899" stroke-width="1.1" fill="none" stroke-dasharray="4 2" marker-end="url(#arr-b)"/>
+      <text x="354" y="116" text-anchor="middle" fill="#EC4899" font-size="7" font-family="JetBrains Mono,monospace">tap "Top up credits" CTA on suspended card</text>
+    </svg>
+  </div>
+</div>
+
+<!-- NAV DOTS -->
+<div class="screen-nav" id="nav-dots">
+  <div class="nav-dot active" onclick="goTo(1)"></div>
+  <div class="nav-dot" onclick="goTo(2)"></div>
+  <div class="nav-dot" onclick="goTo(3)"></div>
+  <div class="nav-dot" onclick="goTo(4)"></div>
+  <div class="nav-dot" onclick="goTo(5)"></div>
+  <div class="nav-dot" onclick="goTo(6)"></div>
+</div>
+
+<!-- SCREEN LABEL -->
+<div class="screen-label" id="screen-label">
+  <div class="s-num" id="s-num">S1 of 6</div>
+  <div class="s-name" id="s-name">Watch List — Low Credits Warning</div>
+  <div class="s-bc" id="s-bc">
+    <span style="color:var(--c-watch)">● WatchManagement</span>&nbsp;
+    <span style="color:var(--c-ledger)">● Ledger</span>
+  </div>
+</div>
+
+<!-- PREV / NEXT -->
+<div class="screen-controls">
+  <button class="ctrl-btn" id="btn-prev" onclick="prev()" disabled>← prev</button>
+  <button class="ctrl-btn" id="btn-next" onclick="next()">next →</button>
+</div>
+
+<!-- PHONE -->
+<div class="phone-wrap">
+  <div class="phone">
+    <div class="phone-notch">
+      <span class="status-time">09:41</span>
+      <div class="status-icons">
+        <span>●●●</span>
+        <span>WiFi</span>
+        <span>🔋</span>
+      </div>
+    </div>
+    <div class="screen-body" id="screen-body">
+
+      <!-- ══ S1: Watch List — Low Credits ══ -->
+      <div class="screen visible" id="s1">
+        <div class="app-bar">
+          <div class="logo-wrap">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true">
+              <circle cx="11.5" cy="11.5" r="8" stroke="#A855F7" stroke-width="2.2"/>
+              <path d="M 5.5 14 C 8 7 17 7.5 18 11" stroke="#06B6D4" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <circle cx="5.5" cy="14" r="1.5" fill="#A855F7"/>
+              <path d="M 16 9 L 20 11 L 17 14 Z" fill="#06B6D4"/>
+              <line x1="18" y1="18" x2="24.5" y2="24.5" stroke="#A855F7" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <span style="font-size:17px;font-weight:800;letter-spacing:-.4px;margin-left:6px"><span style="color:#8493AC;font-weight:600">Search</span><span style="background:linear-gradient(135deg,#A855F7,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Fly</span></span>
+          </div>
+          <button class="screen-action-btn">⚙</button>
+        </div>
+
+        <!-- Ledger — LOW BALANCE WARNING -->
+        <div class="ledger-widget low">
+          <div>
+            <div class="lw-label">CreditBalance · Ledger</div>
+            <div class="lw-balance">3 cr</div>
+            <div class="lw-warn">⚠ Low — ~3 searches remaining</div>
+          </div>
+          <button class="lw-topup-btn" onclick="goTo(4)">Top up</button>
+        </div>
+
+        <div class="section-label">WatchRequests</div>
+
+        <!-- Active watch card -->
+        <div class="watch-card" onclick="goTo(2)">
+          <div class="wc-header">
+            <div class="wc-route">GRU → LHR</div>
+            <span class="status-badge status-active">● active</span>
+          </div>
+          <div class="wc-meta">2 Feb – 18 Feb · Economy</div>
+          <div class="wc-price-row">
+            <div>
+              <div class="wc-price-sub">Current best</div>
+              <div class="wc-price">R$2.840</div>
+            </div>
+            <div class="wc-sparkline">
+              <div class="bar" style="height:55%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:70%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:45%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:85%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:60%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:90%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:75%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:80%;background:var(--c-ledger)"></div>
+            </div>
+          </div>
+          <div class="wc-footer">
+            <span class="wc-footer-left" style="color:var(--c-danger)">⚠ Expires soon — credits low</span>
+            <span class="wc-credit-chip">1 cr/run</span>
+          </div>
+        </div>
+
+        <div class="scroll-pad"></div>
+</div>
+      </div>
+
+      <!-- ══ S2: Watch List — Suspended ══ -->
+      <div class="screen" id="s2">
+        <div class="app-bar">
+          <div class="logo-wrap">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true">
+              <circle cx="11.5" cy="11.5" r="8" stroke="#A855F7" stroke-width="2.2"/>
+              <path d="M 5.5 14 C 8 7 17 7.5 18 11" stroke="#06B6D4" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <circle cx="5.5" cy="14" r="1.5" fill="#A855F7"/>
+              <path d="M 16 9 L 20 11 L 17 14 Z" fill="#06B6D4"/>
+              <line x1="18" y1="18" x2="24.5" y2="24.5" stroke="#A855F7" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <span style="font-size:17px;font-weight:800;letter-spacing:-.4px;margin-left:6px"><span style="color:#8493AC;font-weight:600">Search</span><span style="background:linear-gradient(135deg,#A855F7,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Fly</span></span>
+          </div>
+          <button class="screen-action-btn">⚙</button>
+        </div>
+
+        <!-- Suspended Banner — WatchSuspendedDueToCredits -->
+        <div class="suspended-banner">
+          <div class="sb-event">⚡ WatchSuspendedDueToCredits</div>
+          <div class="sb-msg">Your watch <strong>GRU→LHR</strong> has been suspended — credits exhausted. Top up to resume price tracking.</div>
+          <div class="sb-actions">
+            <button class="sb-cta" onclick="goTo(4)">Top up credits</button>
+            <button class="sb-dismiss">Dismiss</button>
+          </div>
+        </div>
+
+        <!-- Ledger — ZERO BALANCE -->
+        <div class="ledger-widget zero">
+          <div>
+            <div class="lw-label">CreditBalance · Ledger</div>
+            <div class="lw-balance">0 cr</div>
+            <div class="lw-warn">All watches suspended</div>
+          </div>
+          <button class="lw-topup-btn" onclick="goTo(4)">Top up</button>
+        </div>
+
+        <div class="section-label">WatchRequests</div>
+
+        <!-- Suspended watch card -->
+        <div class="watch-card suspended" onclick="goTo(4)">
+          <div class="wc-header">
+            <div class="wc-route" style="opacity:0.7">GRU → LHR</div>
+            <span class="status-badge status-suspended">⏸ suspended_credits</span>
+          </div>
+          <div class="wc-meta">2 Feb – 18 Feb · Economy</div>
+          <div class="wc-price-row">
+            <div>
+              <div class="wc-price-sub">Last known price</div>
+              <div class="wc-price" style="opacity:0.6">R$2.840</div>
+            </div>
+            <div class="wc-sparkline">
+              <div class="bar" style="height:55%;background:#2A3550"></div>
+              <div class="bar" style="height:70%;background:#2A3550"></div>
+              <div class="bar" style="height:45%;background:#2A3550"></div>
+              <div class="bar" style="height:85%;background:#2A3550"></div>
+              <div class="bar" style="height:60%;background:#2A3550"></div>
+              <div class="bar" style="height:90%;background:#2A3550"></div>
+              <div class="bar" style="height:75%;background:#2A3550"></div>
+              <div class="bar" style="height:80%;background:#2A3550"></div>
+            </div>
+          </div>
+          <div class="wc-footer">
+            <span class="wc-footer-left" style="color:var(--c-suspended)">Tracking paused — no credits</span>
+            <button class="wc-topup-inline" onclick="goTo(4)">Top up credits →</button>
+          </div>
+        </div>
+
+        <div class="scroll-pad"></div>
+
+        <div class="bottom-nav">
+          <div class="bn-item">
+            <svg class="bn-icon active" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span class="bn-label active">Watches</span>
+          </div>
+          <div class="bn-item" onclick="goTo(3)">
+            <div class="nav-notif-badge">
+              <svg class="bn-icon" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <span class="bn-label">Alerts</span>
+          </div>
+          <div class="bn-item" onclick="goTo(4)">
+            <svg class="bn-icon billing-active" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="bn-label billing-active">Credits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ S3: Notification Inbox ══ -->
+      <div class="screen" id="s3">
+        <div class="app-bar">
+          <div class="app-title">Alerts</div>
+          <button class="screen-action-btn">Mark all read</button>
+        </div>
+
+        <div class="section-label" style="padding-top:4px">Today</div>
+
+        <!-- WatchSuspendedDueToCredits alert -->
+        <div class="notif-card unread">
+          <div class="nc-header">
+            <div class="nc-icon warn">⚡</div>
+            <div class="nc-title">Watch suspended — credits exhausted</div>
+            <div class="nc-time">2 min ago</div>
+          </div>
+          <div class="nc-body">Your GRU → LHR watch has been paused. Price tracking stopped. Top up credits to resume immediately.</div>
+          <div class="nc-event">WatchSuspendedDueToCredits · Watch Management</div>
+          <button class="nc-action-btn" onclick="goTo(4)">Top up credits →</button>
+        </div>
+
+        <!-- Old price alert (read) -->
+        <div class="notif-card" style="opacity:0.6">
+          <div class="nc-header">
+            <div class="nc-icon success">↓</div>
+            <div class="nc-title">Price dip: GRU → LHR</div>
+            <div class="nc-time">2 days ago</div>
+          </div>
+          <div class="nc-body">Fare dropped to R$2.840. Down 8% from last week's average.</div>
+          <div class="nc-event">AlertSent · Notification</div>
+        </div>
+
+        <!-- Watch created (older) -->
+        <div class="notif-card" style="opacity:0.5">
+          <div class="nc-header">
+            <div class="nc-icon watch">✦</div>
+            <div class="nc-title">Watch created: GRU → LHR</div>
+            <div class="nc-time">5 days ago</div>
+          </div>
+          <div class="nc-body">Tracking started. You'll be notified on significant price drops.</div>
+          <div class="nc-event">WatchCreated · Watch Management</div>
+        </div>
+
+        <div class="scroll-pad"></div>
+
+        <div class="bottom-nav">
+          <div class="bn-item" onclick="goTo(2)">
+            <svg class="bn-icon" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span class="bn-label">Watches</span>
+          </div>
+          <div class="bn-item">
+            <svg class="bn-icon notif-active" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span class="bn-label notif-active">Alerts</span>
+          </div>
+          <div class="bn-item" onclick="goTo(4)">
+            <svg class="bn-icon" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="bn-label">Credits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ S4: Buy Credits (Billing) ══ -->
+      <div class="screen" id="s4">
+        <div class="app-bar">
+          <button class="back-btn" onclick="goTo(2)">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <div style="font-size:14px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Billing BC</div>
+        </div>
+        <div class="billing-header">
+          <h2>Buy Credits</h2>
+          <p>Credits debit per search run. Balance is tracked by the Ledger.</p>
+        </div>
+
+        <!-- Pack 1: Starter -->
+        <div class="pack-card" id="pack1" onclick="selectPack(1)">
+          <div class="pack-icon">✦</div>
+          <div class="pack-info">
+            <div class="pi-name">Starter</div>
+            <div class="pi-credits">50 credits</div>
+            <div class="pi-desc">~50 search runs</div>
+          </div>
+          <div class="pack-price">R$9,90<span class="pp-per">R$0.20/cr</span></div>
+        </div>
+
+        <!-- Pack 2: Explorer (selected by default / recommended) -->
+        <div class="pack-card selected" id="pack2" onclick="selectPack(2)">
+          <span class="pack-badge">POPULAR</span>
+          <div class="pack-icon">🔍</div>
+          <div class="pack-info">
+            <div class="pi-name">Explorer</div>
+            <div class="pi-credits">150 credits</div>
+            <div class="pi-desc">~150 search runs · best value</div>
+          </div>
+          <div class="pack-price">R$24,90<span class="pp-per">R$0.17/cr</span></div>
+        </div>
+
+        <!-- Pack 3: Power -->
+        <div class="pack-card" id="pack3" onclick="selectPack(3)">
+          <div class="pack-icon">⚡</div>
+          <div class="pack-info">
+            <div class="pi-name">Power</div>
+            <div class="pi-credits">500 credits</div>
+            <div class="pi-desc">~500 search runs · heavy users</div>
+          </div>
+          <div class="pack-price">R$69,90<span class="pp-per">R$0.14/cr</span></div>
+        </div>
+
+        <div class="billing-cta-wrap">
+          <button class="billing-cta" id="buy-btn" onclick="goTo(5)">
+            Buy Explorer · R$24,90
+            <span>Processed securely via Stripe</span>
+          </button>
+        </div>
+        <div class="stripe-note">🔒 Powered by Stripe · TLS encrypted</div>
+
+        <div class="scroll-pad"></div>
+
+        <div class="bottom-nav">
+          <div class="bn-item" onclick="goTo(2)">
+            <svg class="bn-icon" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span class="bn-label">Watches</span>
+          </div>
+          <div class="bn-item" onclick="goTo(3)">
+            <svg class="bn-icon" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span class="bn-label">Alerts</span>
+          </div>
+          <div class="bn-item">
+            <svg class="bn-icon billing-active" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="bn-label billing-active">Credits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ S5: Payment Confirmation ══ -->
+      <div class="screen" id="s5">
+        <div class="app-bar">
+          <div></div>
+          <div style="font-size:14px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Billing + Ledger</div>
+        </div>
+
+        <div class="confirm-hero">
+          <div class="confirm-icon">✓</div>
+          <h2>Payment Confirmed</h2>
+          <p>150 credits added to your account. Your suspended watches have been automatically reactivated.</p>
+
+          <!-- Domain events fired -->
+          <div class="confirm-events">
+            <div class="ce-label">Domain Events Fired</div>
+            <div class="ce-event">
+              <div class="ce-dot" style="background:var(--c-billing)"></div>
+              <span class="ce-name">CreditsPurchased</span>
+              <span class="ce-check">✓</span>
+            </div>
+            <div class="ce-event">
+              <div class="ce-dot" style="background:var(--c-ledger)"></div>
+              <span class="ce-name">BalanceRestored</span>
+              <span class="ce-check">✓</span>
+            </div>
+            <div class="ce-event">
+              <div class="ce-dot" style="background:var(--c-watch)"></div>
+              <span class="ce-name">WatchReactivated</span>
+              <span class="ce-check">✓</span>
+            </div>
+          </div>
+
+          <!-- New balance -->
+          <div class="confirm-balance">
+            <div>
+              <div class="cb-label">NEW CreditBalance · Ledger</div>
+            </div>
+            <div class="cb-value">150 cr</div>
+          </div>
+
+          <button class="confirm-cta" onclick="goTo(6)">View your watches →</button>
+        </div>
+      </div>
+
+      <!-- ══ S6: Watch List — Reactivated ══ -->
+      <div class="screen" id="s6">
+        <div class="app-bar">
+          <div class="logo-wrap">
+            <svg viewBox="0 0 28 28" width="22" height="22" fill="none" aria-hidden="true">
+              <circle cx="11.5" cy="11.5" r="8" stroke="#A855F7" stroke-width="2.2"/>
+              <path d="M 5.5 14 C 8 7 17 7.5 18 11" stroke="#06B6D4" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <circle cx="5.5" cy="14" r="1.5" fill="#A855F7"/>
+              <path d="M 16 9 L 20 11 L 17 14 Z" fill="#06B6D4"/>
+              <line x1="18" y1="18" x2="24.5" y2="24.5" stroke="#A855F7" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <span style="font-size:17px;font-weight:800;letter-spacing:-.4px;margin-left:6px"><span style="color:#8493AC;font-weight:600">Search</span><span style="background:linear-gradient(135deg,#A855F7,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Fly</span></span>
+          </div>
+          <button class="screen-action-btn">⚙</button>
+        </div>
+
+        <!-- Reactivation banner — WatchReactivated -->
+        <div class="reactivated-banner">
+          <div class="rb-event">✦ WatchReactivated</div>
+          <div class="rb-msg">GRU → LHR is tracking again. Next search run in ~2 min.</div>
+        </div>
+
+        <!-- Ledger — RESTORED -->
+        <div class="ledger-widget">
+          <div>
+            <div class="lw-label">CreditBalance · Ledger</div>
+            <div class="lw-balance">150 cr</div>
+          </div>
+          <button class="lw-topup-btn" style="background:var(--bg-tag);color:var(--text-muted);border:1px solid var(--border)">Top up</button>
+        </div>
+
+        <div class="section-label">WatchRequests</div>
+
+        <!-- Reactivated watch card -->
+        <div class="watch-card reactivated">
+          <div class="wc-header">
+            <div class="wc-route">GRU → LHR</div>
+            <span class="status-badge status-active">● active</span>
+          </div>
+          <div class="wc-meta">2 Feb – 18 Feb · Economy</div>
+          <div class="wc-price-row">
+            <div>
+              <div class="wc-price-sub">Last known price</div>
+              <div class="wc-price">R$2.840</div>
+            </div>
+            <div class="wc-sparkline">
+              <div class="bar" style="height:55%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:70%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:45%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:85%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:60%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:90%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:75%;background:var(--c-ledger)"></div>
+              <div class="bar" style="height:80%;background:var(--c-ledger)"></div>
+            </div>
+          </div>
+          <div class="wc-footer">
+            <span class="wc-footer-left" style="color:var(--c-scheduler)">Next run in ~2 min</span>
+            <span class="wc-credit-chip">1 cr/run</span>
+          </div>
+        </div>
+
+        <div class="scroll-pad"></div>
+
+        <div class="bottom-nav">
+          <div class="bn-item">
+            <svg class="bn-icon active" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span class="bn-label active">Watches</span>
+          </div>
+          <div class="bn-item" onclick="goTo(3)">
+            <svg class="bn-icon" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span class="bn-label">Alerts</span>
+          </div>
+          <div class="bn-item" onclick="goTo(4)">
+            <svg class="bn-icon" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="bn-label">Credits</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end screen-body -->
+    <!-- ════ GLOBAL BOTTOM NAV ════ -->
+    <div id="p0-global-nav">
+      <div class="bn-item" id="p0-nav-watches" onclick="goTo(1)">
+        <svg class="bn-icon p0-active" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="bn-label p0-active">Watches</span>
+      </div>
+      <div class="bn-item" id="p0-nav-alerts" onclick="goTo(3)">
+        <svg class="bn-icon" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span class="bn-label">Alerts</span>
+      </div>
+      <div class="bn-item" id="p0-nav-credits" onclick="goTo(4)">
+        <svg class="bn-icon" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        <span class="bn-label">Credits</span>
+      </div>
+    </div>
+
+  </div><!-- end phone -->
+</div><!-- end phone-wrap -->
+
+<!-- BC LEGEND -->
+<div class="bc-footer">
+  <div class="bc-footer-title">Bounded Context ownership per screen</div>
+  <div class="bc-chips">
+    <span class="bc-chip" style="color:var(--c-watch);border-color:rgba(168,85,247,0.3)">WatchManagement</span>
+    <span class="bc-chip" style="color:var(--c-ledger);border-color:rgba(6,182,212,0.3)">Ledger</span>
+    <span class="bc-chip" style="color:var(--c-billing);border-color:rgba(236,72,153,0.3)">Billing</span>
+    <span class="bc-chip" style="color:var(--c-notif);border-color:rgba(234,179,8,0.3)">Notification</span>
+    <span class="bc-chip dim" style="color:var(--c-scheduler);border-color:rgba(16,185,129,0.2)">Scheduler</span>
+    <span class="bc-chip dim" style="color:var(--c-search);border-color:rgba(34,197,94,0.2)">Search</span>
+    <span class="bc-chip dim" style="color:var(--c-pricing);border-color:rgba(249,115,22,0.2)">Pricing</span>
+    <span class="bc-chip dim" style="color:var(--c-integ);border-color:rgba(99,102,241,0.2)">Integration</span>
+  </div>
+</div>
+
+<script>
+  const SCREENS = [
+    { name: 'Watch List — Low Credits Warning', bc: '<span style="color:var(--c-watch)">● WatchManagement</span> <span style="color:var(--c-ledger)">● Ledger</span>' },
+    { name: 'Watch List — Suspended (WatchSuspendedDueToCredits)', bc: '<span style="color:var(--c-watch)">● WatchManagement</span> <span style="color:var(--c-ledger)">● Ledger</span>' },
+    { name: 'Notification Inbox — Alert Delivered', bc: '<span style="color:var(--c-notif)">● Notification</span> <span style="color:var(--c-watch)">● WatchManagement</span>' },
+    { name: 'Buy Credits — CreditPack Selection', bc: '<span style="color:var(--c-billing)">● Billing</span> <span style="color:var(--c-ledger)">● Ledger</span>' },
+    { name: 'Payment Confirmation — CreditsPurchased + BalanceRestored', bc: '<span style="color:var(--c-billing)">● Billing</span> <span style="color:var(--c-ledger)">● Ledger</span> <span style="color:var(--c-watch)">● WatchManagement</span>' },
+    { name: 'Watch List — WatchReactivated', bc: '<span style="color:var(--c-watch)">● WatchManagement</span> <span style="color:var(--c-ledger)">● Ledger</span>' },
+  ];
+
+  let current = 1;
+
+  const PACK_LABELS = { 1: 'Starter · R$9,90', 2: 'Explorer · R$24,90', 3: 'Power · R$69,90' };
+  let selectedPack = 2;
+
+  function selectPack(n) {
+    [1,2,3].forEach(i => {
+      const el = document.getElementById('pack'+i);
+      if (el) el.classList.toggle('selected', i === n);
+    });
+    selectedPack = n;
+    const btn = document.getElementById('buy-btn');
+    if (btn) btn.textContent = 'Buy ' + PACK_LABELS[n];
+  }
+
+  function goTo(n) {
+    const prev_s = document.getElementById('s'+current);
+    if (prev_s) prev_s.classList.remove('visible');
+    current = Math.max(1, Math.min(6, n));
+    const next_s = document.getElementById('s'+current);
+    if (next_s) { next_s.classList.add('visible'); next_s.scrollTop = 0; }
+    document.getElementById('s-num').textContent = 'S' + current + ' of 6';
+    document.getElementById('s-name').textContent = SCREENS[current-1].name;
+    document.getElementById('s-bc').innerHTML = SCREENS[current-1].bc;
+    document.getElementById('btn-prev').disabled = current === 1;
+    document.getElementById('btn-next').disabled = current === 6;
+    const dots = document.querySelectorAll('.nav-dot');
+    updateGlobalNav(current);
+    dots.forEach((d, i) => d.classList.toggle('active', i === current-1));
+  }
+
+  function updateGlobalNav(n) {
+    const navMap = { 1:'watches', 2:'watches', 3:'alerts', 4:'credits', 5:'credits', 6:'watches' };
+    const classMap = { watches:'p0-active', alerts:'p0-notif', credits:'p0-billing' };
+    ['watches','alerts','credits'].forEach(id => {
+      const el = document.getElementById('p0-nav-'+id);
+      if (!el) return;
+      el.querySelector('.bn-icon').className = 'bn-icon';
+      el.querySelector('.bn-label').className = 'bn-label';
+    });
+    const active = navMap[n];
+    if (active) {
+      const cls = classMap[active];
+      const el = document.getElementById('p0-nav-'+active);
+      if (el) {
+        el.querySelector('.bn-icon').classList.add(cls);
+        el.querySelector('.bn-label').classList.add(cls);
+      }
+    }
+    document.getElementById('p0-global-nav').style.display = n === 5 ? 'none' : 'flex';
+  }
+  function prev() { goTo(current - 1); }
+  function next() { goTo(current + 1); }
+</script>
+</body>
+</html>
+
+</body></html>
