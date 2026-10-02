@@ -1,108 +1,84 @@
 'use strict';
 
 /**
- * BillingLedger Example
- * Full lifecycle: new user → gift credits → buy pack → search debits → balance exhausted
+ * Billing + Ledger example
+ * Lifecycle: new user (gift credits) -> buy a pack -> failed payment -> refund.
+ * Everything runs in memory; no database and no HTTP server.
  *
- * Run with:  node examples/billing-example.js
+ * Run with:  node examples/billing-example.js   (from apps/api)
  */
 
-const BillingLedger = require('../src/contexts/BillingLedger');
-const { InProcessEventBus } = require('../src/shared/infrastructure/eventBus/InProcessEventBus');
-
-const {
-  CreditLedger,
-  PaymentIntent,
-} = BillingLedger.aggregates;
-
-const {
-  PackDefinitionVO,
-  PaymentAmountVO,
-  GatewayResultVO,
-  EntryTypeVO,
-  CreditBalanceVO,
-} = BillingLedger.valueObjects;
-
-const Events = BillingLedger.events;
-
+const { CreditLedger, PaymentIntent } = require('../src/billing/domain/aggregates');
 const {
   OnCreditsPurchased,
-  OnPriceSnapshotCaptured,
   OnCreditsRefunded,
-} = BillingLedger.eventHandlers;
-
-const {
   ConfirmPaymentUseCase,
-  InitiatePaymentUseCase,
-} = BillingLedger.useCases;
+} = require('../src/billing/application/handlers');
+const { InProcessEventBus } = require('./_event-bus');
 
-// ── In-memory stores ──────────────────────────
-const ledgers  = new Map();
-const intents  = new Map();
+// ── In-memory repositories ────────────────────
+const ledgers = new Map();
+const intents = new Map();
 
 const ledgerRepo = {
-  findByUserId: async (uid)    => ledgers.get(uid) ?? null,
-  save:         async (ledger) => ledgers.set(ledger.userId, ledger),
+  findByUserId: async (userId) => ledgers.get(userId) ?? null,
+  save:         async (ledger) => { ledgers.set(ledger.userId, ledger); },
 };
 
 const intentRepo = {
   findById: async (id)     => intents.get(id) ?? null,
-  save:     async (intent) => intents.set(intent.paymentIntentId, intent),
+  save:     async (intent) => { intents.set(intent.paymentIntentId, intent); },
 };
 
-// ── Event bus ─────────────────────────────────
+// ── Wiring ────────────────────────────────────
 const eventBus = new InProcessEventBus();
+const confirmPayment = new ConfirmPaymentUseCase(intentRepo, eventBus);
+const onCreditsPurchased = new OnCreditsPurchased(ledgerRepo, eventBus);
+const onCreditsRefunded  = new OnCreditsRefunded(ledgerRepo, eventBus);
 
-// ── Wire up handlers ──────────────────────────
-const onCreditsPurchased    = new OnCreditsPurchased(ledgerRepo, eventBus);
-const onPriceSnapshot       = new OnPriceSnapshotCaptured(ledgerRepo, eventBus);
-const confirmPaymentUseCase = new ConfirmPaymentUseCase(intentRepo, eventBus);
+eventBus.subscribe('CreditsPurchased', (e) => onCreditsPurchased.handle(e));
+eventBus.subscribe('CreditsRefunded',  (e) => onCreditsRefunded.handle(e));
 
-eventBus.subscribe('CreditsPurchased', e => onCreditsPurchased.handle(e));
-eventBus.subscribe('PriceSnapshotCaptured', e => onPriceSnapshot.handle(e));
-eventBus.subscribe('BalanceExhausted', e => console.log(`  *** Scheduler should now pause all watches for user ${e.userId} ***`));
-eventBus.subscribe('BalanceRestored', e => console.log(`  *** Scheduler should now resume watches for user ${e.userId} ***`));
-
-// ── Helper: print balance ─────────────────────
 async function printBalance(userId) {
-  const ledger  = await ledgerRepo.findByUserId(userId);
-  const balance = ledger.computeBalance(CreditBalanceVO);
-  console.log(`  Balance: ${balance.available} credits | status: ${ledger.status}`);
+  const ledger = await ledgerRepo.findByUserId(userId);
+  console.log(`  Balance: ${ledger.computeBalance().available} credits | ledger status: ${ledger.status}\n`);
+}
+
+async function buy(userId, packId, gatewayStatus) {
+  const intent = PaymentIntent.initiate({ userId, packId });
+  await intentRepo.save(intent);
+  console.log(`  PaymentIntent ${intent.paymentIntentId.slice(0, 8)}: ${intent.pack.id} (${intent.pack.credits} credits) for ${intent.amount}`);
+  await confirmPayment.execute({
+    paymentIntentId:      intent.paymentIntentId,
+    gatewayTransactionId: `gw-${Date.now()}`,
+    gatewayStatus,
+  });
+  return intent;
 }
 
 // ── Run ───────────────────────────────────────
 (async () => {
   const userId = 'user-99';
 
-  console.log('\n=== 1. New user — open ledger with 10 gift credits ===\n');
-  const ledger = CreditLedger.openForUser(userId, 10, { EntryTypeVO, CreditBalanceVO, Events });
+  console.log('\n=== 1. New user: open the ledger with 10 gift credits ===\n');
+  const ledger = CreditLedger.openForUser(userId, 10);
   await ledgerRepo.save(ledger);
   for (const e of ledger.pullDomainEvents()) await eventBus.publish(e);
   await printBalance(userId);
 
-  console.log('\n=== 2. Simulate 11 searches (will exhaust balance) ===\n');
-  for (let i = 1; i <= 11; i++) {
-    const fakeSnapshotEvent = {
-      type:           'PriceSnapshotCaptured',
-      userId,
-      watchRequestId: 'watch-001',
-      snapshotId:     `snap-${i}`,
-    };
-    await onPriceSnapshot.handle(fakeSnapshotEvent);
-  }
+  console.log('=== 2. User buys the STARTER pack (payment succeeds) ===\n');
+  const starter = await buy(userId, 'STARTER', 'succeeded');
   await printBalance(userId);
 
-  console.log('\n=== 3. User buys the EXPLORER pack (200 credits) ===\n');
-  const intent = PaymentIntent.initiate({ userId, packId: 'EXPLORER' }, { PackDefinitionVO, PaymentAmountVO, Events });
-  await intentRepo.save(intent);
-  console.log(`  PaymentIntent created: ${intent.paymentIntentId}`);
-
-  await confirmPaymentUseCase.execute({
-    paymentIntentId:    intent.paymentIntentId,
-    gatewayTransactionId: 'gw-txn-abc123',
-    gatewayStatus:      'succeeded',
-  });
+  console.log('=== 3. User tries the EXPLORER pack (payment fails) ===\n');
+  await buy(userId, 'EXPLORER', 'failed');
   await printBalance(userId);
 
-  console.log('\n=== Done ===\n');
+  console.log('=== 4. The STARTER payment is refunded ===\n');
+  starter.refund();
+  await intentRepo.save(starter);
+  for (const e of starter.pullDomainEvents()) await eventBus.publish(e);
+  await printBalance(userId);
+
+  console.log('=== Done ===\n');
 })();

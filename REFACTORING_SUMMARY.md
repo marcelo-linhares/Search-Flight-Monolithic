@@ -21,7 +21,7 @@ apps/
       application/
         handlers.js            OnCreditsPurchased, OnPriceSnapshotCaptured, OnCreditsRefunded, ConfirmPaymentUseCase
     tests/unit/billing/        payment-intent.test.js (TDD)
-    examples/                  billing-example.js, search-example.js (see "Known gaps")
+    examples/                  billing-example.js, p0-credit-exhaustion-example.js, _event-bus.js (runnable demos)
     Dockerfile, jest.config.js, package.json, package-lock.json
   mobile/                      Expo SDK 57 client (private package @searchfly/mobile)
     app/                       Expo Router routes: composition points only
@@ -47,7 +47,7 @@ Tooling: Yarn Classic workspaces from the repo root (`yarn install`, `yarn mobil
 | Billing | `src/billing` (PaymentIntent, CreditPack) | `billing` |
 | Ledger | `src/billing` (CreditLedger, LedgerEntry) | `ledger` |
 | Scheduler | not implemented yet | none (no UI; schedule is shown inside the watch detail) |
-| Search | not implemented yet (`examples/search-example.js` is the earlier prototype) | `search` |
+| Search | not implemented yet | `search` |
 | Pricing | not implemented yet | `pricing` |
 | Notification | not implemented yet | `notification` |
 | Integration | not implemented yet | none (admin/debug only) |
@@ -115,6 +115,8 @@ yarn mobile                  # Expo dev server, mock backend by default (see app
 yarn typecheck               # type-checks the mobile app
 yarn api:test                # backend tests (Jest: unit and integration projects)
 docker build -t searchfly-api apps/api
+node apps/api/examples/billing-example.js              # Billing + Ledger lifecycle
+node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across contexts (Search, Scheduler, Notification are fakes)
 ```
 
 ---
@@ -122,16 +124,14 @@ docker build -t searchfly-api apps/api
 ## Known gaps
 
 - **Coverage gate:** `apps/api/jest.config.js` requires 80% branches and 85% functions and lines, so `npm run test:coverage` fails until more tests exist. Only `PaymentIntent` is tested today (about 22% to 30% coverage). `npm test` (unit and integration projects) passes; the `integration` and `stage` projects use placeholder setup files until their first tests are written.
-- **`apps/api/examples/*.js`** still require `src/contexts/...` and `src/shared/infrastructure/eventBus/...`, which belong to the original layout and no longer exist. The examples do not run until they are rewritten against `src/billing`, or until the shared event bus is recreated.
-- **No event bus implementation** exists in `apps/api/src` yet; `handlers.js` expects an object with `publish(event)` and repositories with `findByUserId` / `save`.
-- **Credit pack catalogue differs between backend and mock.** Backend `PackDefinitionVO`: STARTER 50 credits at BRL 9.90, EXPLORER 200 at 29.90, PROFESSIONAL 600 at 69.90. Mobile mock server: Starter 50 at R$ 9,90, Explorer 150 at R$ 24,90, Power 500 at R$ 69,90. The backend is the source of truth; the mock should be aligned.
+- **No event bus implementation** exists in `apps/api/src` yet (the examples use a tiny in-process bus in `examples/_event-bus.js`); `handlers.js` expects an object with `publish(event)` and repositories with `findByUserId` / `save`.
 - **Push notifications** run only in mock mode inside Expo Go; real push requires a development build (see `apps/mobile/README.md`).
 
 ---
 
 ## Next steps
 
-1. Rewrite or remove the stale examples and add unit tests for `CreditLedger`, the value objects and the handlers (coverage is about 22% to 30%).
+1. Add unit tests for `CreditLedger`, the value objects and the handlers (coverage is about 22% to 30%).
 2. Add repositories and an in-process event bus for Billing/Ledger, then HTTP controllers (Express or Fastify) calling the use cases.
 3. Implement the remaining contexts in the order the P0 flow needs them: Watch Management, Scheduler, Search, Pricing, Notification.
 4. Point the mobile app to the real API with `EXPO_PUBLIC_API_URL` and keep `packages/domain-events` as the contract (add contract tests).
@@ -173,3 +173,7 @@ The backend moved into `apps/api` with `git mv` (history preserved), and `apps/m
 ### October 2026: Jest configuration
 
 The `integration` and `stage` Jest projects pointed to setup files that did not exist, so every Jest run failed configuration validation. Placeholder `tests/integration/setup.js`, `tests/stage/setup.js` and `tests/stage/teardown.js` were added and the `coverageThreshold` option name was corrected. `npm test` now passes.
+
+### October 2026: examples and pack catalogue
+
+The examples still required the original `src/contexts/...` layout, so they were rewritten against `src/billing`: `billing-example.js` (gift credits, purchase, failed payment, refund) and `p0-credit-exhaustion-example.js` (credit exhaustion and reactivation across contexts, with fake Search, Scheduler and Notification), both using `examples/_event-bus.js`. The old `search-example.js` was removed because the Search context it demonstrated is not in the repository. The mobile mock server now uses the backend credit pack catalogue (STARTER 50 credits at R$ 9,90, EXPLORER 200 at R$ 29,90, PROFESSIONAL 600 at R$ 69,90, same ids), so a pack id sent to the real API will match.

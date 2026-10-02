@@ -163,6 +163,8 @@ yarn mobile                         # Expo dev server (mock backend by default)
 yarn typecheck                      # type-checks the mobile app
 yarn api:test                       # backend tests
 docker build -t searchfly-api apps/api
+node apps/api/examples/billing-example.js              # Billing + Ledger lifecycle
+node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across contexts (fakes for the missing contexts)
 ```
 
 `apps/api` keeps its own `package-lock.json` because the Docker build context is `apps/api` and the image installs with `npm install`.
@@ -197,7 +199,5 @@ docker build -t searchfly-api apps/api
 ## 9. Known gaps
 
 - Test coverage is about 22% to 30% (only `PaymentIntent` is tested), so `npm run test:coverage` fails its 80% / 85% thresholds until more unit tests are written.
-- `apps/api/examples/*.js` still require the original `src/contexts/...` and `src/shared/...` layout and do not run.
-- There is no event bus implementation, repository implementation, HTTP server or gateway adapter in `apps/api/src` yet. The Dockerfile exposes port 5050 and its `CMD` is a placeholder (`npm run`) until a start script exists.
-- The credit pack catalogue differs between the backend (`PackDefinitionVO`) and the mobile mock server. The backend is the source of truth.
+- There is no event bus implementation, repository implementation, HTTP server or gateway adapter in `apps/api/src` yet. The examples use a small in-process bus (`examples/_event-bus.js`) in the meantime. The Dockerfile exposes port 5050 and its `CMD` is a placeholder (`npm run`) until a start script exists.
 - Real push notifications need a development build; Expo Go runs the mock flow only.
