@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0C1018",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.searchfly.mobile"
@@ -40,7 +39,9 @@
         {
           "locationWhenInUsePermission": "SearchFly uses your location to suggest the nearest departure airport."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-status-bar"
     ],
     "icon": "./assets/icon.png"
   }
