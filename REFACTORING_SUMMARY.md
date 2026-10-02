@@ -113,7 +113,7 @@ On the backend only the Billing and Ledger part exists; the rest is simulated by
 yarn install                 # repo root
 yarn mobile                  # Expo dev server, mock backend by default (see apps/mobile/README.md)
 yarn typecheck               # type-checks the mobile app
-yarn api:test                # backend tests (see "Known gaps" for the Jest configuration issue)
+yarn api:test                # backend tests (Jest: unit and integration projects)
 docker build -t searchfly-api apps/api
 ```
 
@@ -121,8 +121,7 @@ docker build -t searchfly-api apps/api
 
 ## Known gaps
 
-- **`apps/api/jest.config.js`** declares `integration` and `stage` projects whose setup files (`tests/integration/setup.js`, `tests/stage/setup.js`, `tests/stage/teardown.js`) do not exist, so every Jest run (even `--selectProjects unit`) stops at configuration validation with "Module ./tests/integration/setup.js in the globalSetup option was not found". The coverage option is also misspelled (`coverageThresholds`; Jest expects `coverageThreshold`) and is ignored with a warning. The unit test passes when run on its own: `npx jest --config '{"testEnvironment":"node","testMatch":["<rootDir>/tests/unit/**/*.test.js"]}'`. Purpose of the three projects (unit, integration, stage) is described in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#6-testing-strategy).
-- **`apps/api/Dockerfile`** exposes port 5050 and its `CMD` is a placeholder (`npm run`); there is no server or `start` script yet.
+- **Coverage gate:** `apps/api/jest.config.js` requires 80% branches and 85% functions and lines, so `npm run test:coverage` fails until more tests exist. Only `PaymentIntent` is tested today (about 22% to 30% coverage). `npm test` (unit and integration projects) passes; the `integration` and `stage` projects use placeholder setup files until their first tests are written.
 - **`apps/api/examples/*.js`** still require `src/contexts/...` and `src/shared/infrastructure/eventBus/...`, which belong to the original layout and no longer exist. The examples do not run until they are rewritten against `src/billing`, or until the shared event bus is recreated.
 - **No event bus implementation** exists in `apps/api/src` yet; `handlers.js` expects an object with `publish(event)` and repositories with `findByUserId` / `save`.
 - **Credit pack catalogue differs between backend and mock.** Backend `PackDefinitionVO`: STARTER 50 credits at BRL 9.90, EXPLORER 200 at 29.90, PROFESSIONAL 600 at 69.90. Mobile mock server: Starter 50 at R$ 9,90, Explorer 150 at R$ 24,90, Power 500 at R$ 69,90. The backend is the source of truth; the mock should be aligned.
@@ -132,7 +131,7 @@ docker build -t searchfly-api apps/api
 
 ## Next steps
 
-1. Fix the Jest configuration and rewrite or remove the stale examples.
+1. Rewrite or remove the stale examples and add unit tests for `CreditLedger`, the value objects and the handlers (coverage is about 22% to 30%).
 2. Add repositories and an in-process event bus for Billing/Ledger, then HTTP controllers (Express or Fastify) calling the use cases.
 3. Implement the remaining contexts in the order the P0 flow needs them: Watch Management, Scheduler, Search, Pricing, Notification.
 4. Point the mobile app to the real API with `EXPO_PUBLIC_API_URL` and keep `packages/domain-events` as the contract (add contract tests).
@@ -170,3 +169,7 @@ The backend moved into `apps/api` with `git mv` (history preserved), and `apps/m
 | `examples/` | `apps/api/examples/` |
 | `package.json`, `package-lock.json`, `jest.config.js`, `Dockerfile` | `apps/api/` (same names) |
 | - | `apps/mobile/`, `packages/{domain-events,ui,config}/`, `brand/` |
+
+### October 2026: Jest configuration
+
+The `integration` and `stage` Jest projects pointed to setup files that did not exist, so every Jest run failed configuration validation. Placeholder `tests/integration/setup.js`, `tests/stage/setup.js` and `tests/stage/teardown.js` were added and the `coverageThreshold` option name was corrected. `npm test` now passes.

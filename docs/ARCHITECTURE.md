@@ -151,7 +151,7 @@ Backend tests run with **Jest** (`apps/api/jest.config.js`). The configuration d
 | `integration` | Use cases and handlers wired together with in-memory repositories and an in-process bus. | a global setup file |
 | `stage` | End-to-end behavior against a running server, a database and mocked providers; longer timeout. | global setup and teardown |
 
-Today only `tests/unit/billing/payment-intent.test.js` exists. The `integration` and `stage` projects are declared but their setup files are not written yet (see "Known gaps"). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
+Today only `tests/unit/billing/payment-intent.test.js` exists. The `integration` and `stage` projects have placeholder setup files (`tests/integration/setup.js`, `tests/stage/setup.js`, `tests/stage/teardown.js`) that do nothing yet; fill them in when the first test of that kind is written. `npm test` runs the unit and integration projects. Coverage thresholds are 80% branches and 85% functions and lines (`npm run test:coverage`). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
 
 ---
 
@@ -196,7 +196,7 @@ docker build -t searchfly-api apps/api
 
 ## 9. Known gaps
 
-- `apps/api/jest.config.js`: the `integration` and `stage` setup files do not exist and the coverage option is misspelled, so `npm test` fails (details in REFACTORING_SUMMARY.md).
+- Test coverage is about 22% to 30% (only `PaymentIntent` is tested), so `npm run test:coverage` fails its 80% / 85% thresholds until more unit tests are written.
 - `apps/api/examples/*.js` still require the original `src/contexts/...` and `src/shared/...` layout and do not run.
 - There is no event bus implementation, repository implementation, HTTP server or gateway adapter in `apps/api/src` yet. The Dockerfile exposes port 5050 and its `CMD` is a placeholder (`npm run`) until a start script exists.
 - The credit pack catalogue differs between the backend (`PackDefinitionVO`) and the mobile mock server. The backend is the source of truth.
