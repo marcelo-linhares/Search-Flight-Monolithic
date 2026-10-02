@@ -17,10 +17,11 @@ let seq = 0
 const nid = (p: string) => `${p}_${++seq}`
 const nowIso = () => new Date().toISOString()
 
+// Same catalogue as the backend (apps/api/src/billing/domain/value-objects.js, PackDefinitionVO): ids, credits and BRL prices.
 const PACKS: CreditPackDTO[] = [
-  { id: 'starter', name: 'Starter', credits: 50, priceCents: 990 },
-  { id: 'explorer', name: 'Explorer', credits: 150, priceCents: 2490, recommended: true },
-  { id: 'power', name: 'Power', credits: 500, priceCents: 6990 },
+  { id: 'STARTER', name: 'Starter', credits: 50, priceCents: 990 },
+  { id: 'EXPLORER', name: 'Explorer', credits: 200, priceCents: 2990, recommended: true },
+  { id: 'PROFESSIONAL', name: 'Professional', credits: 600, priceCents: 6990 },
 ]
 
 const state = {
