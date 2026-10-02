@@ -1,215 +1,203 @@
-# SmartFlight — Project Structure
+# SearchFly Architecture
 
-This project is organized following **Domain-Driven Design (DDD)** principles in a **monolithic** style with clear **bounded contexts**.
+SearchFly is a credit-based flight price tracker. A user creates a **watch** on a route, the system runs automated searches, Pricing detects a significant drop and Notification alerts the user. Each search run debits credits; credits are bought through a payment gateway and tracked by a ledger. When the credits run out, the user's watches are suspended automatically and reactivated as soon as the balance is restored.
 
-## Directory Structure
+The system is a **DDD monolith** (one deployable backend, 8 bounded contexts) with an **Expo React Native client**, kept in one Yarn-workspaces monorepo. This file describes the architecture **as it is today** and how to extend it. The history of the structure is in [REFACTORING_SUMMARY.md](../REFACTORING_SUMMARY.md); the Git workflow is in [GITHUB_SETUP.md](GITHUB_SETUP.md).
 
-```
-src/
-├── shared/                    # Cross-cutting concerns & infrastructure
-│   ├── domain/
-│   │   ├── DomainEvent.js
-│   │   ├── AggregateRoot.js
-│   │   ├── ValueObject.js
-│   │   ├── Entity.js
-│   │   └── errors/
-│   │       └── DomainError.js
-│   ├── infrastructure/
-│   │   ├── eventBus/
-│   │   │   ├── EventBus.js
-│   │   │   └── InProcessEventBus.js
-│   │   └── repository/
-│   │       └── Repository.js
-│   └── index.js
-│
-├── contexts/                  # Bounded contexts (isolated domains)
-│   ├── BillingLedger/
-│   │   ├── domain/
-│   │   │   ├── aggregates/           # Root aggregates
-│   │   │   │   ├── PaymentIntent.js
-│   │   │   │   ├── CreditPack.js
-│   │   │   │   ├── CreditLedger.js
-│   │   │   │   └── index.js
-│   │   │   ├── valueObjects/         # Immutable value objects
-│   │   │   │   ├── PackDefinitionVO.js
-│   │   │   │   ├── PaymentAmountVO.js
-│   │   │   │   ├── GatewayResultVO.js
-│   │   │   │   ├── EntryTypeVO.js
-│   │   │   │   ├── CreditBalanceVO.js
-│   │   │   │   └── index.js
-│   │   │   ├── events/               # Domain events
-│   │   │   │   └── index.js
-│   │   │   ├── services/             # Domain services (stateless)
-│   │   │   └── specs/                # Domain validation rules
-│   │   ├── application/
-│   │   │   ├── useCases/             # Application orchestration
-│   │   │   │   ├── ConfirmPaymentUseCase.js
-│   │   │   │   └── index.js
-│   │   │   ├── eventHandlers/        # Event subscribers
-│   │   │   │   └── index.js
-│   │   │   └── dto/                  # Data transfer objects
-│   │   ├── infrastructure/
-│   │   │   ├── persistence/          # Repository implementations
-│   │   │   │   ├── PaymentIntentRepository.js
-│   │   │   │   ├── CreditBalanceRepository.js
-│   │   │   │   └── adapters/
-│   │   │   ├── gateways/             # External service adapters
-│   │   │   └── eventSubscribers/
-│   │   ├── presentation/             # Controllers/API handlers
-│   │   │   └── controllers/
-│   │   └── index.js                  # Public API
-│   │
-│   └── SearchOrchestrator/
-│       ├── domain/
-│       │   ├── aggregates/
-│       │   │   ├── PriceSnapshot.js
-│       │   │   ├── WatchRequest.js
-│       │   │   └── index.js
-│       │   ├── valueObjects/
-│       │   │   ├── MoneyVO.js
-│       │   │   ├── RouteVO.js
-│       │   │   ├── SearchPolicy.js
-│       │   │   ├── ThresholdVO.js
-│       │   │   ├── CabinClassVO.js
-│       │   │   ├── ItineraryVO.js
-│       │   │   └── index.js
-│       │   ├── events/
-│       │   │   └── index.js
-│       │   └── services/
-│       │       └── SearchOrchestrator.js
-│       ├── application/
-│       │   ├── useCases/
-│       │   │   ├── ExecuteSearchUseCase.js
-│       │   │   ├── CreateWatchRequestUseCase.js
-│       │   │   └── index.js
-│       │   └── eventHandlers/
-│       │       └── index.js
-│       ├── infrastructure/
-│       │   ├── persistence/
-│       │   ├── externalServices/
-│       │   └── eventSubscribers/
-│       └── index.js
-│
-└── index.js                  # Application entry point
-
-examples/                     # Example usage
-├── billing-example.js
-└── search-example.js
-```
-
-## Architecture Layers
-
-### 1. **Domain Layer** (`domain/`)
-- **Pure business logic** with no external dependencies
-- **Aggregates**: Root entities managing state and events
-- **Value Objects**: Immutable, comparison-focused objects
-- **Events**: Domain events raised during behavior
-- **Services**: Stateless operations coordinating aggregates
-- **Specs**: Domain validation rules
-
-### 2. **Application Layer** (`application/`)
-- **Use Cases**: Orchestrate domain objects, load/save aggregates
-- **Event Handlers**: React to domain events
-- **DTOs**: Data transfer between layers
-- **No business logic** — only coordination
-
-### 3. **Infrastructure Layer** (`infrastructure/`)
-- **Persistence**: Repository implementations
-- **Adapters**: External service integration (payment gateways, APIs)
-- **Event Subscribers**: Listen and delegate to use cases
-- **All technical concerns**
-
-### 4. **Presentation Layer** (`presentation/`)
-- **Controllers**: HTTP/API handlers
-- **Thin layer** — delegates to application use cases
-
-## Key Concepts
-
-### Bounded Contexts
-Each context (`BillingLedger`, `SearchOrchestrator`) is **isolated**:
-- Own domain models
-- Own database/persistence
-- Own event streams
-- **No shared aggregates** between contexts — only event communication
-
-### Domain Events
-- Immutable, frozen objects
-- Published to the event bus
-- Represent facts about what happened
-- Enable loose coupling between contexts
-
-### Event Bus
-- **In-Process** (`InProcessEventBus`) for MVP
-- Easily replaceable with Kafka/RabbitMQ
-- Subscribers wired to event handlers
-
-### Public API
-Each context exports a clean **public API** via `index.js`:
-- Only what's needed externally
-- Hides internal implementation
-- Enables refactoring without breaking contracts
-
-## Imports & Dependencies
-
-### ✅ Within a Bounded Context
-```javascript
-// ✅ OK: Same context
-const { CreditLedger } = require('../aggregates');
-const Events = require('../events');
-```
-
-### ✅ Between Bounded Contexts
-```javascript
-// ✅ OK: Via public API (events only)
-const BillingLedger = require('../../contexts/BillingLedger');
-const events = BillingLedger.events;
-```
-
-### ❌ Forbidden
-```javascript
-// ❌ DO NOT: Direct imports across contexts
-const PaymentIntent = require('../../../SearchOrchestrator/domain/aggregates/PaymentIntent');
-
-// ❌ DO NOT: Aggregates crossing context boundaries
-// Use events instead
-```
-
-## Running Examples
-
-```bash
-# Billing ledger example
-node examples/billing-example.js
-
-# Search orchestrator example
-node examples/search-example.js
-```
-
-## Extending the Project
-
-### Adding a New Bounded Context
-1. Create `src/contexts/NewContext/`
-2. Follow the same layered structure
-3. Export public API from `index.js`
-4. Listen to other contexts' events via the event bus
-
-### Adding a New Aggregate
-1. Create `src/contexts/YourContext/domain/aggregates/YourAggregate.js`
-2. Extend `AggregateRoot` for root aggregates
-3. Define value objects it needs
-4. Emit domain events in behavior methods
-5. Export via `domain/aggregates/index.js`
-
-### Adding a Repository
-1. Create `src/contexts/YourContext/infrastructure/persistence/YourRepository.js`
-2. Extend `Repository`
-3. Implement abstract methods
-4. Use in application layer
-
-## Dependencies
-- **Node.js**: No external dependencies for domain/application layers
-- **Infrastructure layer**: Adapt as needed (MongoDB, Express, etc.)
+Last updated: October 2026.
 
 ---
 
-**Last Updated**: May 2026  
-**DDD Principles**: Aggregates, Value Objects, Domain Events, Bounded Contexts, Repositories
+## 1. System overview
+
+```
+┌──────────────────────────┐        REST + push (APNs / FCM)       ┌───────────────────────────────┐
+│  apps/mobile             │ <──────────────────────────────────> │  apps/api                     │
+│  Expo SDK 57, RN 0.86    │                                       │  Node.js monolith             │
+│  Expo Router + Zustand   │                                       │  8 bounded contexts           │
+│  client EventBus         │                                       │  in-process event bus (MVP)   │
+└────────────┬─────────────┘                                       └───────────────┬───────────────┘
+             │                                                                     │
+             └────────────────────  packages/domain-events  ───────────────────────┘
+                         shared DTOs + client-visible events (TypeScript contract)
+```
+
+| Part | Responsibility |
+|------|----------------|
+| `apps/api` | The monolith: domain model, use cases, event handlers. Private package `@searchfly/api`. |
+| `apps/mobile` | The client. Runs against an in-memory mock server unless `EXPO_PUBLIC_API_URL` is set. Private package `@searchfly/mobile`. |
+| `packages/domain-events` | The contract between server and client: DTOs and the events the UI must show. |
+| `packages/ui` | Design tokens, shared components and the logomark. Declares `react`, `react-native`, `react-native-svg` as peer dependencies only. |
+| `packages/config` | Shared `tsconfig.base.json` and prettier config. |
+| `brand/` | Logomark SVGs. |
+| `docs/` | This document, the experiment log, the Git setup notes, the architecture pages (HTML) and the wireframes. |
+
+The visual architecture pages live next to this file: `SearchFly — Solution Architecture.html`, `SearchFly — Full-Stack Architecture.html`, `SearchFly — Frontend Architecture.html`, `SearchFly — P0 Credit Exhaustion & Reactivation Flow.html`, and the wireframes in `docs/WireFrames/`.
+
+---
+
+## 2. Bounded contexts
+
+| Context | Owns | Backend today | Mobile today |
+|---------|------|---------------|--------------|
+| Watch Management | WatchRequest, lifecycle (`active`, `suspended_credits`, `expired`, `cancelled`) | not implemented | `modules/watch` |
+| Billing | PaymentIntent, CreditPack, gateway interaction | `src/billing` | `modules/billing` |
+| Ledger | CreditLedger, LedgerEntry, the credit balance | `src/billing` | `modules/ledger` |
+| Scheduler | When each watch runs; pausing and resuming | not implemented | no module (schedule shown in the watch detail) |
+| Search | PriceSnapshot, search execution | not implemented | `modules/search` |
+| Pricing | Price-drop and anomaly detection | not implemented | `modules/pricing` |
+| Notification | Alerts, channel preferences, push delivery | not implemented | `modules/notification` |
+| Integration | Providers (flight data, payment gateway adapters) | not implemented | no module (admin/debug only) |
+
+Billing and Ledger share the folder `src/billing` for now; they stay separate aggregates with their own events.
+
+### Context map (who reacts to whom)
+
+```
+Billing ── CreditsPurchased ──────────────> Ledger ── BalanceRestored ──> Scheduler ──> Watch Management
+Search  ── PriceSnapshotCaptured ─────────> Ledger ── SearchCreditDebited ──> audit log
+                                            Ledger ── BalanceExhausted ───> Scheduler ──> Watch Management
+Watch Management ── WatchSuspendedDueToCredits / WatchReactivated ──> Notification ──> push to the client
+Search  ── PriceSnapshotCaptured ─────────> Pricing ── PriceDropDetected ──> Notification
+Billing ── PaymentFailed ─────────────────> Notification
+Ledger  ── GiftCreditsGranted ────────────> Notification
+```
+
+Only the Billing and Ledger part exists in `apps/api`; the rest is simulated by the mobile mock server (Profile > Demo controls).
+
+---
+
+## 3. Layers inside a context
+
+```
+┌────────────────────────────────────┐
+│ Presentation   controllers, routes │   thin; calls use cases
+├────────────────────────────────────┤
+│ Application    use cases, handlers │   orchestrates; no business rules
+├────────────────────────────────────┤
+│ Domain         aggregates, value   │   pure logic, no I/O, no framework
+│                objects, events     │
+├────────────────────────────────────┤
+│ Infrastructure repositories,       │   technical concerns
+│                gateways, adapters  │
+└────────────────────────────────────┘
+```
+
+- **Domain:** aggregates enforce invariants and record domain events (`pullDomainEvents()` hands them to the caller); value objects are immutable (frozen) and compared by value; events are frozen facts created by factories (`makeEvent`: `eventId`, `occurredAt`, `type`, payload).
+- **Application:** use cases (for example `ConfirmPaymentUseCase`) load and save aggregates through repositories and publish the events the aggregate recorded. Event handlers (`OnCreditsPurchased`, `OnPriceSnapshotCaptured`, `OnCreditsRefunded`) are thin subscribers that delegate to an aggregate.
+- **Infrastructure:** repositories (`findByUserId`, `save`), payment gateway adapters, the event bus implementation. Gateway vocabulary is translated here, so the domain never sees gateway language.
+- **Presentation:** HTTP controllers calling use cases. Not implemented yet.
+
+### Backend layout today
+
+```
+apps/api/src/billing/
+  domain/
+    aggregates.js        PaymentIntent, CreditPack, CreditLedger, LedgerEntry, PaymentStatus, LedgerStatus
+    value-objects.js     PackDefinitionVO, PaymentAmountVO, GatewayResultVO, ...
+    events.js            PaymentConfirmed, CreditsPurchased, PaymentFailed, CreditsRefunded,
+                         SearchCreditDebited, BalanceExhausted, BalanceRestored, GiftCreditsGranted
+  application/
+    handlers.js          OnCreditsPurchased, OnPriceSnapshotCaptured, OnCreditsRefunded, ConfirmPaymentUseCase
+apps/api/tests/unit/billing/payment-intent.test.js
+```
+
+Today each concern is one file (`aggregates.js`, `value-objects.js`, `events.js`). When a file grows, split it into a folder with one file per aggregate or value object and an `index.js` that re-exports, as in the original design.
+
+---
+
+## 4. Communication rules
+
+1. **Contexts talk only through domain events.** A context never requires another context's aggregates, value objects, repositories or stores.
+2. **No shared value objects between contexts.** Each context redefines what it needs in its own language (Billing's `PaymentAmountVO` mirrors Search's `MoneyVO`).
+3. **Events are facts in the past tense** (`CreditsPurchased`, not `AddCredits`), immutable, and carry the identifiers subscribers need.
+4. **The Ledger is the only source of the credit balance.** The UI never derives it from Billing data.
+5. **Handlers are idempotent where possible** and written against an event bus interface (`publish(event)`) so the in-process bus can be replaced by a message queue later.
+6. **Server-internal events stay in the monolith.** Only the events the UI must show are part of the shared contract in `packages/domain-events` (`WatchSuspendedDueToCredits`, `WatchReactivated`, `BalanceRestored`, `CreditsPurchased`, `PriceDropDetected`, `AlertReceived`).
+
+```javascript
+// OK: inside one context
+const { CreditLedger } = require('../domain/aggregates');
+
+// OK: across contexts, only by reacting to an event payload
+bus.subscribe('CreditsPurchased', (event) => handler.handle(event));
+
+// NOT OK: reaching into another context
+const { PaymentIntent } = require('../../billing/domain/aggregates');   // from the search context
+```
+
+---
+
+## 5. Client architecture (`apps/mobile`)
+
+- **Expo Router** routes live in `app/` and are **composition points only**: they fill screen slots with components from the modules.
+- **One folder per bounded context** in `src/modules/` (`watch`, `billing`, `ledger`, `notification`, `search`, `pricing`), each with its own Zustand `store.ts`, `events.ts` and components/screens. A module **never imports another module's store**.
+- **Client EventBus** (`src/shared/bus`) mirrors the server's event emitter. Cross-module data flows through it; for example `WatchSuspendedDueToCredits` updates the watch store (`suspended_credits`) and the notification store.
+- **API layer** (`src/shared/api`): `http.ts` for the real backend, `mock/` for the in-memory server. `USE_MOCK` is true when `EXPO_PUBLIC_API_URL` is empty.
+- **Push channel** (`src/shared/push`): in mock mode the mock server pushes straight into the bus; in real mode it uses `expo-notifications`, loaded lazily and skipped inside Expo Go (Android remote push was removed from Expo Go in SDK 53).
+- **Rules:** suspended watches always show the top-up call to action; the Ledger store is the only balance source; alert preferences are a separate screen, not part of the watch form; Scheduler and Integration have no mobile module.
+
+Details and the Expo upgrade procedure are in [apps/mobile/README.md](../apps/mobile/README.md).
+
+---
+
+## 6. Testing strategy
+
+Backend tests run with **Jest** (`apps/api/jest.config.js`). The configuration defines three isolated Jest "projects", selected with `--selectProjects`:
+
+| Project | Purpose | Needs |
+|---------|---------|-------|
+| `unit` | Domain logic (aggregates, value objects, events) in milliseconds, written test-first (TDD). | nothing |
+| `integration` | Use cases and handlers wired together with in-memory repositories and an in-process bus. | a global setup file |
+| `stage` | End-to-end behavior against a running server, a database and mocked providers; longer timeout. | global setup and teardown |
+
+Today only `tests/unit/billing/payment-intent.test.js` exists. The `integration` and `stage` projects are declared but their setup files are not written yet (see "Known gaps"). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
+
+---
+
+## 7. Build and run
+
+```bash
+yarn install                        # repo root
+yarn mobile                         # Expo dev server (mock backend by default)
+yarn typecheck                      # type-checks the mobile app
+yarn api:test                       # backend tests
+docker build -t searchfly-api apps/api
+```
+
+`apps/api` keeps its own `package-lock.json` because the Docker build context is `apps/api` and the image installs with `npm install`.
+
+---
+
+## 8. Extending the project
+
+### Add a bounded context (backend)
+
+1. Create `apps/api/src/<context>/{domain,application,infrastructure,presentation}`.
+2. Model aggregates and value objects in `domain`; record events in the aggregate's behavior methods.
+3. Add use cases and event handlers in `application`.
+4. Subscribe to other contexts' events through the event bus; never import their code.
+5. Write the unit test first (`tests/unit/<context>/...`), then the code.
+6. If the UI must show an event, add it to `packages/domain-events/src/events.ts` and handle it in the matching mobile module.
+
+### Add an aggregate or a repository
+
+1. Add the aggregate to `domain/aggregates.js` (or its own file once the file grows) and export it.
+2. Define the repository contract the use cases need (`findBy...`, `save`) and implement it in `infrastructure/persistence`.
+3. Keep persistence details out of the domain.
+
+### Add a mobile module
+
+1. Create `apps/mobile/src/modules/<context>/` with `store.ts` and `events.ts`.
+2. Subscribe to the client bus in `events.ts`; export components and screens.
+3. Compose them from a route in `app/`; do not import other modules' stores.
+
+---
+
+## 9. Known gaps
+
+- `apps/api/jest.config.js`: the `integration` and `stage` setup files do not exist and the coverage option is misspelled, so `npm test` fails (details in REFACTORING_SUMMARY.md).
+- `apps/api/examples/*.js` still require the original `src/contexts/...` and `src/shared/...` layout and do not run.
+- There is no event bus implementation, repository implementation, HTTP server or gateway adapter in `apps/api/src` yet. The Dockerfile exposes port 5050 and its `CMD` is a placeholder (`npm run`) until a start script exists.
+- The credit pack catalogue differs between the backend (`PackDefinitionVO`) and the mobile mock server. The backend is the source of truth.
+- Real push notifications need a development build; Expo Go runs the mock flow only.
