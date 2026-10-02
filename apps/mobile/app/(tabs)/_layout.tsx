@@ -3,12 +3,13 @@ import { Redirect, Tabs } from 'expo-router'
 import { colors, fonts } from '@searchfly/ui'
 import { selectUnread, useNotificationStore } from '../../src/modules/notification/store'
 import { useAuth } from '../../src/shared/auth/store'
+import { ColorValue } from 'react-native'
 
 type Icon = React.ComponentProps<typeof Ionicons>['name']
 const tab = (title: string, icon: Icon, color: string) => ({
   title,
   tabBarActiveTintColor: color,
-  tabBarIcon: ({ color: c, size }: { color: string; size: number }) => <Ionicons name={icon} size={size} color={c} />,
+  tabBarIcon: ({ color: c, size }: { color: ColorValue; size: number }) => <Ionicons name={icon} size={size} color={c} />,
 })
 
 export default function TabsLayout() {

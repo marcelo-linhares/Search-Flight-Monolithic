@@ -2,6 +2,9 @@
   "name": "searchfly",
   "private": true,
   "version": "0.1.0",
+  "resolutions": {
+    "react-native-screens": "4.26.2"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -12,6 +15,6 @@
     "typecheck": "yarn workspaces run typecheck"
   },
   "devDependencies": {
-    "typescript": "~5.3.3"
+    "typescript": "~6.0.3"
   }
 }
