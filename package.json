@@ -12,7 +12,7 @@
   "scripts": {
     "api:test": "yarn workspace @searchfly/api test",
     "mobile": "yarn workspace @searchfly/mobile start",
-    "typecheck": "yarn workspaces run typecheck"
+    "typecheck": "yarn workspace @searchfly/mobile tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "~6.0.3"

@@ -121,3 +121,15 @@ Próximos passos:
 - Iniciar a refatoração de um dos contextos para microsserviço.
 
 
+
+---
+
+## Entrada 6 — 2026-10-01 9h e 2026-10-02 10h30m
+
+Foi uma sessão exaustiva de aprendizados com github, setup do React (uma tecnologia relativamente nova para mim).
+Minha experiência com github é relativamente boa, porém com um uso mais esporádico. Hoje tive uma boa sessão de aprendizado com o apoio do Claude.Code que facilitou muito a vida.
+Comandos como git fetch, git checkout e git grep, me fizeram fixar o conhecimento. Realmente muito bom.
+Agora com o React, apenas acompanhei o time de desenvolvimento na empresa em que trabalho. Não cheguei a fazer um treinamento específico nem nada.
+Mesmo com o pouco tempo de experiência no React, consegui levantar toda a infra necessária (local) para fazer ele funcionar corretamente. Voalá! O Frontend (parcial), está funcionando.
+Ferramentas como o Android Studio, YARN, EXPO-GO também foram sugestões do próprio Claude. Todas as sugestões funcionaram perfeitamente para a simulação que eu precisava.
+

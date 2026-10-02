@@ -2,7 +2,7 @@
 
 **Repository:** https://github.com/marcelo-linhares/Search-Flight-Monolithic  
 **Owner:** marcelo-linhares  
-**Default branch:** `main`  
+**Default branch:** `develop` (changed in October 2026; `main` is the stable branch)  
 **Active experiment branch:** `context/billing-ledger`  
 
 ## Branch convention
@@ -72,3 +72,38 @@ config validation. The existing unit test passes when run on its own:
 ### Pushing from a Claude session
 
 The repository must be listed in the session's sources, otherwise the git proxy answers `403` and pushes are refused.
+
+## Lessons learned (October 2026)
+
+### Pull requests and branches
+
+- A PR's base branch defaults to the repository's default branch. The skeleton PR (#1) was merged into `main` while the default was still `main`, which left `develop` behind. Always check the "base" box. The default branch is now `develop`.
+- When `develop` is a plain ancestor of `main`, it can be fast-forwarded without a force push: `git fetch origin` then `git push origin origin/main:refs/heads/develop`. The reverse works for syncing `main` once `develop` is green: `git push origin origin/develop:refs/heads/main` (first check that `git log origin/develop..origin/main` prints nothing).
+- Never force-push `main` or `develop` to repair a branching mistake; fast-forward or merge instead.
+- GitHub can show a stale commit list on a PR after its base branch moved (it kept listing the skeleton commit). Toggling the base branch and back, or closing and reopening the PR, refreshes it. Git computes the actual merge itself, so the stale list is cosmetic.
+- Use "Create a merge commit" (not squash) for stacked branches so each commit stays in `develop`.
+- Run `git fetch origin` before reading `origin/*` in `git log`; otherwise the output is stale.
+- After a PR is merged, delete its branch (GitHub button) and run `git fetch origin --prune`.
+
+### Windows
+
+- Files in the working tree use CRLF. Other tools may report most files as modified; `git diff --ignore-cr-at-eol --stat` shows the real changes, and `git add <explicit paths>` avoids committing line-ending noise.
+- An interrupted Git tool can leave an empty `.git/index.lock`. If Git says it cannot create `index.lock` and no Git process is running, delete that one file.
+- Keep the repo outside OneDrive. Syncing `node_modules` produced locked folders ("Deletion of directory failed") and slow installs.
+- Close editors and terminals that have a moved or deleted folder open before `git pull`.
+
+### Yarn and workspaces
+
+- The repo uses Yarn Classic 1.22 with workspaces (`apps/*`, `packages/*`). Run `yarn install` from the root. `yarn.lock` is committed.
+- `npx` can resolve the wrong path for hoisted binaries in a workspace on Windows. Prefer `yarn <bin>` from the workspace folder.
+- Flags take two dashes with no space (`--fix`, `--clear`).
+- Shared library packages declare `react`, `react-native` and `react-native-svg` as `peerDependencies` only. Use root `resolutions` for forced single versions.
+- `yarn typecheck` at the root type-checks the mobile app (`yarn workspace @searchfly/mobile tsc --noEmit`). It used to run `typecheck` in every workspace, which failed because `apps/api` has no such script.
+
+### Expo SDK 52 to 57 (PR #3)
+
+Upgrade steps and the breaking changes we hit are in [apps/mobile/README.md](../apps/mobile/README.md). Result: expo-doctor 21/21, `tsc` clean, app running in Expo Go SDK 57 with the mock backend.
+
+### Claude sessions
+
+A session can read the repository but pushes are refused (`403`, "not in this session's authorized repository set") unless the repository is selected as a source when the session starts. Committing and pushing from your own terminal is the fallback.
