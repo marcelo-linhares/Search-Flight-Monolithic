@@ -62,12 +62,9 @@ docs/            architecture, wireframes, experiment log
 - Docker: build context is `apps/api` (`docker build -t searchfly-api apps/api`). `apps/api` keeps its own `package-lock.json` for that reason.
 - Frontend/shared packages use Yarn workspaces from the repo root (`yarn install`, `yarn typecheck`, `yarn mobile`).
 
-### Known issue (pre-existing)
+### Jest configuration (fixed in October 2026)
 
-`apps/api/jest.config.js` declares `integration` and `stage` projects whose `globalSetup` / `globalTeardown` files
-(`tests/integration/setup.js`, `tests/stage/setup.js`, `tests/stage/teardown.js`) do not exist yet, so `npm test` fails Jest
-config validation. The existing unit test passes when run on its own:
-`npx jest --config '{"testEnvironment":"node","testMatch":["<rootDir>/tests/unit/**/*.test.js"]}'`.
+`apps/api/jest.config.js` declared `integration` and `stage` projects whose `globalSetup` / `globalTeardown` files did not exist, so Jest failed config validation on every run (even for the unit tests), and the coverage option was misspelled (`coverageThresholds`). Placeholder setup files were added and the option was renamed to `coverageThreshold`. `npm test` (unit and integration projects) passes. `npm run test:coverage` still fails its 80% / 85% thresholds until more tests are written.
 
 ### Pushing from a Claude session
 
