@@ -85,6 +85,26 @@ The repository must be listed in the session's sources, otherwise the git proxy 
 - Run `git fetch origin` before reading `origin/*` in `git log`; otherwise the output is stale.
 - After a PR is merged, delete its branch (GitHub button) and run `git fetch origin --prune`.
 
+### Keeping `main` and `develop` in sync
+
+**Rule: never open a pull request between `develop` and `main`, in either direction. Sync `main` only with a fast-forward push.**
+
+Why: a PR always creates a merge commit. In October 2026, PRs #5 (`develop` into `main`), #6 (`main` into `develop`) and #7 (`develop` into `main`) each added a merge commit to one branch that the other did not have, so GitHub kept showing "N commits behind" even though the files were identical (`git diff origin/main origin/develop` was empty). A PR-based sync never converges; GitHub's "behind" counts commits, not content.
+
+How to sync `main` when `develop` is stable:
+
+```bash
+git fetch origin
+git log origin/develop..origin/main --oneline      # must print nothing (main has nothing develop lacks)
+git push origin origin/develop:refs/heads/main     # fast-forward, no new commit, no force
+```
+
+Quick check of the relationship between the two branches: `git rev-list --left-right --count origin/main...origin/develop` prints `<only on main> <only on develop>`. `0 N` means `main` can be fast-forwarded to `develop`; `N 0` means `develop` is the one that can be fast-forwarded to `main` (`git push origin origin/main:refs/heads/develop`); `N M` with both above zero means the branches have really diverged, so stop and look at `git log` before pushing anything.
+
+Recovery after a PR ping-pong: if the trees are identical and one branch only lacks merge commits, fast-forward it to the other as above. Do not force-push.
+
+Day-to-day work stays the same: feature and chore branches go into `develop` through pull requests (base `develop`, "Create a merge commit"). `main` may lag behind `develop` until you want a release point.
+
 ### Windows
 
 - Files in the working tree use CRLF. Other tools may report most files as modified; `git diff --ignore-cr-at-eol --stat` shows the real changes, and `git add <explicit paths>` avoids committing line-ending noise.
