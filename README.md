@@ -4,7 +4,7 @@ SearchFly — DDD flight price tracker. A Node.js monolith (8 bounded contexts) 
 
 ```
 apps/
-  api/      Node.js monolith (src/billing, tests, examples, Dockerfile)
+  api/      Node.js monolith (src/billing, src/ledger, src/shared, tests, examples, Dockerfile)
   mobile/   Expo RN client (feat/mobile-app)
 packages/
   domain-events/   shared DTOs + event contract (server <-> client)

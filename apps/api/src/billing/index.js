@@ -1,0 +1,27 @@
+'use strict';
+
+// Public entry point of the Billing context.
+// Other code (composition root, controllers) imports ONLY this file.
+// Billing publishes PaymentConfirmed, CreditsPurchased, PaymentFailed and
+// CreditsRefunded; it subscribes to nothing today (the gateway webhook
+// controller calls confirmPayment directly).
+
+const {
+  InitiatePaymentUseCase,
+  ConfirmPaymentUseCase,
+  RefundPaymentUseCase,
+  ListUserPayments,
+} = require('./application/use-cases');
+const { InMemoryPaymentIntentRepository } = require('./infrastructure/in-memory-payment-intent-repository');
+
+function registerBilling({ eventBus, paymentIntentRepo = new InMemoryPaymentIntentRepository() }) {
+  return {
+    paymentIntentRepo,
+    initiatePayment: new InitiatePaymentUseCase(paymentIntentRepo, eventBus),
+    confirmPayment:  new ConfirmPaymentUseCase(paymentIntentRepo, eventBus),
+    refundPayment:   new RefundPaymentUseCase(paymentIntentRepo, eventBus),
+    listUserPayments: new ListUserPayments(paymentIntentRepo),
+  };
+}
+
+module.exports = { registerBilling };

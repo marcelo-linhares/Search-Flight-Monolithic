@@ -4,70 +4,44 @@
  * Billing + Ledger example
  * Lifecycle: new user (gift credits) -> buy a pack -> failed payment -> refund.
  * Everything runs in memory; no database and no HTTP server.
+ * The contexts are wired by the composition root (src/app.js) and only talk
+ * to each other through events on the in-process event bus.
  *
  * Run with:  node examples/billing-example.js   (from apps/api)
  */
 
-const { CreditLedger, PaymentIntent } = require('../src/billing/domain/aggregates');
-const {
-  OnCreditsPurchased,
-  OnCreditsRefunded,
-  ConfirmPaymentUseCase,
-} = require('../src/billing/application/handlers');
-const { InProcessEventBus } = require('./_event-bus');
+const { createApp } = require('../src/app');
+const { InProcessEventBus } = require('../src/shared/in-process-event-bus');
 
-// ── In-memory repositories ────────────────────
-const ledgers = new Map();
-const intents = new Map();
-
-const ledgerRepo = {
-  findByUserId: async (userId) => ledgers.get(userId) ?? null,
-  save:         async (ledger) => { ledgers.set(ledger.userId, ledger); },
-};
-
-const intentRepo = {
-  findById: async (id)     => intents.get(id) ?? null,
-  save:     async (intent) => { intents.set(intent.paymentIntentId, intent); },
-};
-
-// ── Wiring ────────────────────────────────────
-const eventBus = new InProcessEventBus();
-const confirmPayment = new ConfirmPaymentUseCase(intentRepo, eventBus);
-const onCreditsPurchased = new OnCreditsPurchased(ledgerRepo, eventBus);
-const onCreditsRefunded  = new OnCreditsRefunded(ledgerRepo, eventBus);
-
-eventBus.subscribe('CreditsPurchased', (e) => onCreditsPurchased.handle(e));
-eventBus.subscribe('CreditsRefunded',  (e) => onCreditsRefunded.handle(e));
+const app = createApp({
+  eventBus: new InProcessEventBus({ onPublish: (e) => console.log(`  [event] ${e.type}`) }),
+});
 
 async function printBalance(userId) {
-  const ledger = await ledgerRepo.findByUserId(userId);
-  console.log(`  Balance: ${ledger.computeBalance().available} credits | ledger status: ${ledger.status}\n`);
+  const { available, status } = await app.ledger.getCreditBalance.execute({ userId });
+  console.log(`  Balance: ${available} credits | ledger status: ${status}\n`);
 }
 
 async function buy(userId, packId, gatewayStatus) {
-  const intent = PaymentIntent.initiate({ userId, packId });
-  await intentRepo.save(intent);
-  console.log(`  PaymentIntent ${intent.paymentIntentId.slice(0, 8)}: ${intent.pack.id} (${intent.pack.credits} credits) for ${intent.amount}`);
-  await confirmPayment.execute({
-    paymentIntentId:      intent.paymentIntentId,
+  const checkout = await app.billing.initiatePayment.execute({ userId, packId });
+  console.log(`  PaymentIntent ${checkout.paymentIntentId.slice(0, 8)}: ${checkout.packId} (${checkout.credits} credits) for ${checkout.currency} ${checkout.amount}`);
+  await app.billing.confirmPayment.execute({
+    paymentIntentId:      checkout.paymentIntentId,
     gatewayTransactionId: `gw-${Date.now()}`,
     gatewayStatus,
   });
-  return intent;
+  return checkout.paymentIntentId;
 }
 
-// ── Run ───────────────────────────────────────
 (async () => {
   const userId = 'user-99';
 
-  console.log('\n=== 1. New user: open the ledger with 10 gift credits ===\n');
-  const ledger = CreditLedger.openForUser(userId, 10);
-  await ledgerRepo.save(ledger);
-  for (const e of ledger.pullDomainEvents()) await eventBus.publish(e);
+  console.log('\n=== 1. New user registers: ledger opens with 10 gift credits ===\n');
+  await app.eventBus.publish({ type: 'UserRegistered', userId }); // would come from Identity
   await printBalance(userId);
 
   console.log('=== 2. User buys the STARTER pack (payment succeeds) ===\n');
-  const starter = await buy(userId, 'STARTER', 'succeeded');
+  const starterId = await buy(userId, 'STARTER', 'succeeded');
   await printBalance(userId);
 
   console.log('=== 3. User tries the EXPLORER pack (payment fails) ===\n');
@@ -75,10 +49,10 @@ async function buy(userId, packId, gatewayStatus) {
   await printBalance(userId);
 
   console.log('=== 4. The STARTER payment is refunded ===\n');
-  starter.refund();
-  await intentRepo.save(starter);
-  for (const e of starter.pullDomainEvents()) await eventBus.publish(e);
+  await app.billing.refundPayment.execute({ paymentIntentId: starterId });
   await printBalance(userId);
 
-  console.log('=== Done ===\n');
+  console.log('=== 5. Histories ===\n');
+  console.table(await app.billing.listUserPayments.execute({ userId }), ['packId', 'amount', 'status']);
+  console.table(await app.ledger.getLedgerHistory.execute({ userId }), ['type', 'amount', 'description']);
 })();

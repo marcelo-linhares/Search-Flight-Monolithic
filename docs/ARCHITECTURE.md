@@ -41,20 +41,22 @@ The visual architecture pages live next to this file: `SearchFly — Solution Ar
 | Context | Owns | Backend today | Mobile today |
 |---------|------|---------------|--------------|
 | Watch Management | WatchRequest, lifecycle (`active`, `suspended_credits`, `expired`, `cancelled`) | not implemented | `modules/watch` |
-| Billing | PaymentIntent, CreditPack, gateway interaction | `src/billing` | `modules/billing` |
-| Ledger | CreditLedger, LedgerEntry, the credit balance | `src/billing` | `modules/ledger` |
+| Billing | PaymentIntent, CreditPack, gateway interaction | `src/billing` (domain, use cases, in-memory repository) | `modules/billing` |
+| Ledger | CreditLedger, LedgerEntry, the credit balance | `src/ledger` (domain, handlers, queries, in-memory repository) | `modules/ledger` |
 | Scheduler | When each watch runs; pausing and resuming | not implemented | no module (schedule shown in the watch detail) |
 | Search | PriceSnapshot, search execution | not implemented | `modules/search` |
 | Pricing | Price-drop and anomaly detection | not implemented | `modules/pricing` |
 | Notification | Alerts, channel preferences, push delivery | not implemented | `modules/notification` |
 | Integration | Providers (flight data, payment gateway adapters) | not implemented | no module (admin/debug only) |
 
-Billing and Ledger share the folder `src/billing` for now; they stay separate aggregates with their own events.
+Billing and Ledger each have their own folder, events and value objects. They never import each other: the Ledger only knows the payload of Billing's events. `src/app.js` is the composition root that creates the event bus and wires both contexts.
 
 ### Context map (who reacts to whom)
 
 ```
+Identity ── UserRegistered ────────────────> Ledger ── GiftCreditsGranted ──> Notification
 Billing ── CreditsPurchased ──────────────> Ledger ── BalanceRestored ──> Scheduler ──> Watch Management
+Billing ── CreditsRefunded ───────────────> Ledger ── BalanceExhausted (if it reaches zero)
 Search  ── PriceSnapshotCaptured ─────────> Ledger ── SearchCreditDebited ──> audit log
                                             Ledger ── BalanceExhausted ───> Scheduler ──> Watch Management
 Watch Management ── WatchSuspendedDueToCredits / WatchReactivated ──> Notification ──> push to the client
@@ -63,7 +65,7 @@ Billing ── PaymentFailed ─────────────────
 Ledger  ── GiftCreditsGranted ────────────> Notification
 ```
 
-Only the Billing and Ledger part exists in `apps/api`; the rest is simulated by the mobile mock server (Profile > Demo controls).
+Only the Billing and Ledger part exists in `apps/api` (Identity's `UserRegistered` and Search's `PriceSnapshotCaptured` are published by tests and examples); the rest is simulated by the mobile mock server (Profile > Demo controls).
 
 ---
 
@@ -91,18 +93,25 @@ Only the Billing and Ledger part exists in `apps/api`; the rest is simulated by 
 ### Backend layout today
 
 ```
-apps/api/src/billing/
-  domain/
-    aggregates.js        PaymentIntent, CreditPack, CreditLedger, LedgerEntry, PaymentStatus, LedgerStatus
-    value-objects.js     PackDefinitionVO, PaymentAmountVO, GatewayResultVO, ...
-    events.js            PaymentConfirmed, CreditsPurchased, PaymentFailed, CreditsRefunded,
-                         SearchCreditDebited, BalanceExhausted, BalanceRestored, GiftCreditsGranted
-  application/
-    handlers.js          OnCreditsPurchased, OnPriceSnapshotCaptured, OnCreditsRefunded, ConfirmPaymentUseCase
-apps/api/tests/unit/billing/payment-intent.test.js
+apps/api/src/
+  app.js                       composition root: creates the event bus and wires the contexts
+  shared/                      technical kernel only (no domain concepts)
+    domain-event.js            makeEvent(type, payload)
+    in-process-event-bus.js    subscribe(type, handler) / publish(event)
+  billing/
+    index.js                   public entry point: registerBilling({ eventBus })
+    domain/                    aggregates.js (PaymentIntent, CreditPack), value-objects.js, events.js
+    application/use-cases.js   InitiatePayment, ConfirmPayment, RefundPayment, ListUserPayments
+    infrastructure/            in-memory-payment-intent-repository.js
+  ledger/
+    index.js                   public entry point: registerLedger({ eventBus })
+    domain/                    aggregates.js (CreditLedger, LedgerEntry), value-objects.js, events.js
+    application/               handlers.js (OnUserRegistered, OnCreditsPurchased, OnPriceSnapshotCaptured,
+                               OnCreditsRefunded), queries.js (GetCreditBalance, GetLedgerHistory)
+    infrastructure/            in-memory-ledger-repository.js
 ```
 
-Today each concern is one file (`aggregates.js`, `value-objects.js`, `events.js`). When a file grows, split it into a folder with one file per aggregate or value object and an `index.js` that re-exports, as in the original design.
+The in-memory repositories store a snapshot and rebuild a fresh aggregate on every read, like a real database would, so tests catch a forgotten `save()`. Replace them with database repositories (same `findBy...` / `save` methods) when persistence is added. Ledger entries for purchases and refunds are idempotent (one entry per payment), because an event bus can redeliver events.
 
 ---
 
@@ -117,13 +126,13 @@ Today each concern is one file (`aggregates.js`, `value-objects.js`, `events.js`
 
 ```javascript
 // OK: inside one context
-const { CreditLedger } = require('../domain/aggregates');
+const { CreditLedger } = require('../domain/aggregates');   // inside src/ledger
 
 // OK: across contexts, only by reacting to an event payload
 bus.subscribe('CreditsPurchased', (event) => handler.handle(event));
 
 // NOT OK: reaching into another context
-const { PaymentIntent } = require('../../billing/domain/aggregates');   // from the search context
+const { PaymentIntent } = require('../../billing/domain/aggregates');   // from src/ledger or src/search
 ```
 
 ---
@@ -151,7 +160,7 @@ Backend tests run with **Jest** (`apps/api/jest.config.js`). The configuration d
 | `integration` | Use cases and handlers wired together with in-memory repositories and an in-process bus. | a global setup file |
 | `stage` | End-to-end behavior against a running server, a database and mocked providers; longer timeout. | global setup and teardown |
 
-Today only `tests/unit/billing/payment-intent.test.js` exists. The `integration` and `stage` projects have placeholder setup files (`tests/integration/setup.js`, `tests/stage/setup.js`, `tests/stage/teardown.js`) that do nothing yet; fill them in when the first test of that kind is written. `npm test` runs the unit and integration projects. Coverage thresholds are 80% branches and 85% functions and lines (`npm run test:coverage`). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
+Unit tests live in `tests/unit/{billing,ledger,shared}` (aggregates, value objects, use cases, handlers, queries, repositories, event bus). `tests/integration/billing-ledger.flow.test.js` runs the whole Billing + Ledger flow through the real in-memory bus and `createApp()` (registration gift, purchase, credit exhaustion, reactivation, refund). The `stage` project has placeholder setup files (`tests/stage/setup.js`, `tests/stage/teardown.js`) that do nothing yet; fill them in when the first end-to-end test is written. `npm test` runs the unit and integration projects. Coverage thresholds are 80% branches and 85% functions and lines (`npm run test:coverage`). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
 
 ---
 

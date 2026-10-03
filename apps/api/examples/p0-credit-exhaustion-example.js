@@ -3,7 +3,7 @@
 /**
  * P0 flow: credit exhaustion and reactivation, across bounded contexts.
  *
- * Real code:  Billing and Ledger (src/billing).
+ * Real code:  Billing and Ledger (src/billing, src/ledger), wired by src/app.js.
  * Fakes:      Search, Scheduler/Watch Management and Notification are NOT
  *             implemented yet; the small classes below only simulate the events
  *             they would publish and react to, so you can see how contexts
@@ -12,27 +12,11 @@
  * Run with:  node examples/p0-credit-exhaustion-example.js   (from apps/api)
  */
 
-const { CreditLedger, PaymentIntent } = require('../src/billing/domain/aggregates');
-const {
-  OnCreditsPurchased,
-  OnPriceSnapshotCaptured,
-  ConfirmPaymentUseCase,
-} = require('../src/billing/application/handlers');
-const { InProcessEventBus } = require('./_event-bus');
+const { createApp } = require('../src/app');
+const { InProcessEventBus } = require('../src/shared/in-process-event-bus');
 
-// ── Real: Ledger and Billing persistence (in memory) ──
-const ledgers = new Map();
-const intents = new Map();
-const ledgerRepo = {
-  findByUserId: async (id) => ledgers.get(id) ?? null,
-  save:         async (l)  => { ledgers.set(l.userId, l); },
-};
-const intentRepo = {
-  findById: async (id) => intents.get(id) ?? null,
-  save:     async (i)  => { intents.set(i.paymentIntentId, i); },
-};
-
-const bus = new InProcessEventBus({ verbose: true });
+const bus = new InProcessEventBus({ onPublish: (e) => console.log(`  [event] ${e.type}`) });
+const app = createApp({ eventBus: bus, giftCredits: 2 });
 
 // ── Fake: Scheduler + Watch Management ────────────────
 class FakeScheduler {
@@ -82,14 +66,9 @@ async function searchTick(scheduler, tick) {
   }
 }
 
-// ── Wiring ────────────────────────────────────
+// ── Wiring (Billing <-> Ledger is already done by createApp) ──
 const scheduler = new FakeScheduler(bus);
-const onSnapshot  = new OnPriceSnapshotCaptured(ledgerRepo, bus);
-const onPurchased = new OnCreditsPurchased(ledgerRepo, bus);
-const confirmPayment = new ConfirmPaymentUseCase(intentRepo, bus);
 
-bus.subscribe('PriceSnapshotCaptured',      (e) => onSnapshot.handle(e));   // Search  -> Ledger
-bus.subscribe('CreditsPurchased',           (e) => onPurchased.handle(e));  // Billing -> Ledger
 bus.subscribe('BalanceExhausted',           (e) => scheduler.onBalanceExhausted(e)); // Ledger -> Scheduler
 bus.subscribe('BalanceRestored',            (e) => scheduler.onBalanceRestored(e));  // Ledger -> Scheduler
 bus.subscribe('WatchSuspendedDueToCredits', notify);                        // Watch -> Notification
@@ -100,9 +79,7 @@ bus.subscribe('WatchReactivated',           notify);
   const userId = 'user-42';
 
   console.log('\n=== 1. User has 2 gift credits and two active watches ===\n');
-  const ledger = CreditLedger.openForUser(userId, 2);
-  await ledgerRepo.save(ledger);
-  for (const e of ledger.pullDomainEvents()) await bus.publish(e);
+  await bus.publish({ type: 'UserRegistered', userId }); // would come from Identity
   scheduler.add('watch-GRU-LIS', userId);
   scheduler.add('watch-GRU-MIA', userId);
   scheduler.print();
@@ -116,10 +93,9 @@ bus.subscribe('WatchReactivated',           notify);
   console.log('');
 
   console.log('=== 4. User buys the STARTER pack (50 credits) ===\n');
-  const intent = PaymentIntent.initiate({ userId, packId: 'STARTER' });
-  await intentRepo.save(intent);
-  await confirmPayment.execute({
-    paymentIntentId: intent.paymentIntentId,
+  const checkout = await app.billing.initiatePayment.execute({ userId, packId: 'STARTER' });
+  await app.billing.confirmPayment.execute({
+    paymentIntentId: checkout.paymentIntentId,
     gatewayTransactionId: 'gw-txn-1',
     gatewayStatus: 'succeeded',
   });
@@ -127,5 +103,5 @@ bus.subscribe('WatchReactivated',           notify);
 
   console.log('=== 5. Searches resume ===\n');
   await searchTick(scheduler, 3);
-  console.log(`\n  Balance: ${(await ledgerRepo.findByUserId(userId)).computeBalance().available} credits\n`);
+  console.log(`\n  Balance: ${(await app.ledger.getCreditBalance.execute({ userId })).available} credits\n`);
 })();
