@@ -13,15 +13,14 @@ Last reviewed: October 2026.
 ```
 apps/
   api/                         Node.js monolith (private package @searchfly/api)
-    src/billing/
-      domain/
-        aggregates.js          PaymentIntent, CreditPack, CreditLedger, LedgerEntry (+ PaymentStatus, LedgerStatus)
-        value-objects.js       PackDefinitionVO, PaymentAmountVO, GatewayResultVO, ...
-        events.js              event factories (PaymentConfirmed, CreditsPurchased, BalanceExhausted, ...)
-      application/
-        handlers.js            OnCreditsPurchased, OnPriceSnapshotCaptured, OnCreditsRefunded, ConfirmPaymentUseCase
-    tests/unit/billing/        payment-intent.test.js (TDD)
-    examples/                  billing-example.js, p0-credit-exhaustion-example.js, _event-bus.js (runnable demos)
+    src/
+      app.js                   composition root (event bus + context wiring)
+      shared/                  domain-event.js, in-process-event-bus.js (technical kernel)
+      billing/                 domain (PaymentIntent, CreditPack), application/use-cases.js, infrastructure (in-memory repo), index.js
+      ledger/                  domain (CreditLedger, LedgerEntry), application (handlers, queries), infrastructure (in-memory repo), index.js
+    tests/unit/                billing/, ledger/, shared/ (TDD)
+    tests/integration/         billing-ledger.flow.test.js (full flow through the event bus)
+    examples/                  billing-example.js, p0-credit-exhaustion-example.js (runnable demos)
     Dockerfile, jest.config.js, package.json, package-lock.json
   mobile/                      Expo SDK 57 client (private package @searchfly/mobile)
     app/                       Expo Router routes: composition points only
@@ -44,23 +43,23 @@ Tooling: Yarn Classic workspaces from the repo root (`yarn install`, `yarn mobil
 | Context | Backend (`apps/api`) | Mobile (`apps/mobile/src/modules`) |
 |---------|----------------------|-------------------------------------|
 | Watch Management | not implemented yet | `watch` |
-| Billing | `src/billing` (PaymentIntent, CreditPack) | `billing` |
-| Ledger | `src/billing` (CreditLedger, LedgerEntry) | `ledger` |
+| Billing | `src/billing` (PaymentIntent, CreditPack, use cases) | `billing` |
+| Ledger | `src/ledger` (CreditLedger, LedgerEntry, handlers, queries) | `ledger` |
 | Scheduler | not implemented yet | none (no UI; schedule is shown inside the watch detail) |
 | Search | not implemented yet | `search` |
 | Pricing | not implemented yet | `pricing` |
 | Notification | not implemented yet | `notification` |
 | Integration | not implemented yet | none (admin/debug only) |
 
-Billing and Ledger currently share the folder `src/billing`; they are separate aggregates with their own events and should be split into two modules when more contexts arrive. The mobile app mirrors the other contexts with an in-memory mock server so the full flows can be demonstrated before the backend exists.
+Billing and Ledger have separate folders, events and value objects and talk only through events on the in-process bus (wired in `src/app.js`). The mobile app mirrors the other contexts with an in-memory mock server so the full flows can be demonstrated before the backend exists.
 
 ---
 
 ## Design rules that still apply
 
-1. **Contexts communicate only through domain events.** No importing another context's aggregates or stores. On the backend this means subscribers (`handlers.js`); on the client it means the Zustand-based EventBus in `src/shared/bus`.
+1. **Contexts communicate only through domain events.** No importing another context's aggregates or stores. On the backend this means subscribers (`src/ledger/application/handlers.js`); on the client it means the Zustand-based EventBus in `src/shared/bus`.
 2. **Contexts do not share value objects.** Each context redefines what it needs in its own language (for example `PaymentAmountVO` in Billing mirrors Search's `MoneyVO`).
-3. **Layers per context:** domain (aggregates, value objects, events) -> application (use cases, event handlers) -> infrastructure (repositories, gateways, adapters) -> presentation. Only domain and application exist in `src/billing` today.
+3. **Layers per context:** domain (aggregates, value objects, events) -> application (use cases, event handlers) -> infrastructure (repositories, gateways, adapters) -> presentation. Billing and Ledger have all three (infrastructure is in-memory repositories); presentation (HTTP) does not exist yet.
 4. **Single source for balance:** the credit balance comes from Ledger only, never from Billing data.
 5. **Suspended watches always offer a top-up call to action** (entry point to the Billing flow).
 6. **Notification is downstream of everything.** Alert preferences live in their own screen, not in the watch form.
@@ -71,7 +70,7 @@ Billing and Ledger currently share the folder `src/billing`; they are separate a
 
 ## Domain events
 
-### Backend (`apps/api/src/billing/domain/events.js`)
+### Backend (`apps/api/src/billing/domain/events.js` and `apps/api/src/ledger/domain/events.js`)
 
 | Event | Emitted by | Reaction |
 |-------|------------|----------|
@@ -123,16 +122,15 @@ node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across context
 
 ## Known gaps
 
-- **Coverage gate:** `apps/api/jest.config.js` requires 80% branches and 85% functions and lines, so `npm run test:coverage` fails until more tests exist. Only `PaymentIntent` is tested today (about 22% to 30% coverage). `npm test` (unit and integration projects) passes; the `integration` and `stage` projects use placeholder setup files until their first tests are written.
-- **No event bus implementation** exists in `apps/api/src` yet (the examples use a tiny in-process bus in `examples/_event-bus.js`); `handlers.js` expects an object with `publish(event)` and repositories with `findByUserId` / `save`.
+- **No persistence or HTTP yet:** repositories are in memory and there is no controller layer; `Dockerfile` still has a placeholder `CMD`. Open domain questions are kept as `it.todo` in the tests (for example `NaN` accepted by `PaymentAmountVO`, a `pending` webhook marking a payment as failed, refunds larger than the balance being clamped to zero, debits not idempotent).
 - **Push notifications** run only in mock mode inside Expo Go; real push requires a development build (see `apps/mobile/README.md`).
 
 ---
 
 ## Next steps
 
-1. Add unit tests for `CreditLedger`, the value objects and the handlers (coverage is about 22% to 30%).
-2. Add repositories and an in-process event bus for Billing/Ledger, then HTTP controllers (Express or Fastify) calling the use cases.
+1. Decide the open domain questions listed in the `it.todo` items and turn them into tests.
+2. Add HTTP controllers (Express or Fastify) calling the Billing and Ledger use cases, and database repositories behind the same `findBy...` / `save` methods.
 3. Implement the remaining contexts in the order the P0 flow needs them: Watch Management, Scheduler, Search, Pricing, Notification.
 4. Point the mobile app to the real API with `EXPO_PUBLIC_API_URL` and keep `packages/domain-events` as the contract (add contract tests).
 5. Replace the in-process event bus with a message queue only when a context is actually extracted from the monolith.
@@ -152,7 +150,7 @@ The flat code base was reorganized into bounded contexts with a layered structur
 | No infrastructure abstraction | Abstract repository and event bus |
 | Shared value objects | Each context owns its domain |
 
-The design targeted two contexts, `BillingLedger` and `SearchOrchestrator`, under `src/contexts/` with a `src/shared/` kernel (DomainEvent, AggregateRoot, ValueObject, Entity, EventBus, Repository). That layout is not what the code on `develop` uses today: the implemented code is the flatter `src/billing/{domain,application}` shown above.
+The design targeted two contexts, `BillingLedger` and `SearchOrchestrator`, under `src/contexts/` with a `src/shared/` kernel (DomainEvent, AggregateRoot, ValueObject, Entity, EventBus, Repository). That layout is not what the code on `develop` uses today: the implemented code is the flatter `src/{billing,ledger}/{domain,application,infrastructure}` shown above.
 
 ### August to September 2026: thesis experiment
 
@@ -177,3 +175,7 @@ The `integration` and `stage` Jest projects pointed to setup files that did not 
 ### October 2026: examples and pack catalogue
 
 The examples still required the original `src/contexts/...` layout, so they were rewritten against `src/billing`: `billing-example.js` (gift credits, purchase, failed payment, refund) and `p0-credit-exhaustion-example.js` (credit exhaustion and reactivation across contexts, with fake Search, Scheduler and Notification), both using `examples/_event-bus.js`. The old `search-example.js` was removed because the Search context it demonstrated is not in the repository. The mobile mock server now uses the backend credit pack catalogue (STARTER 50 credits at R$ 9,90, EXPLORER 200 at R$ 29,90, PROFESSIONAL 600 at R$ 69,90, same ids), so a pack id sent to the real API will match.
+
+### October 2026: unit tests, Ledger split and application layer
+
+Unit tests were added for `CreditLedger`, the value objects, the handlers and `PaymentIntent` (see `tests/unit`). The Ledger was then moved out of `src/billing` into its own context `src/ledger` (own aggregates, value objects, events, handlers and queries), the shared technical code went to `src/shared` (`makeEvent`, `InProcessEventBus`), and both contexts got use cases or queries, in-memory repositories and a public `index.js`. `src/app.js` is the composition root and `tests/integration/billing-ledger.flow.test.js` exercises the full flow. Ledger purchases and refunds became idempotent (one entry per payment). `examples/_event-bus.js` was removed in favor of `src/shared/in-process-event-bus.js`; the examples now use `createApp()`.

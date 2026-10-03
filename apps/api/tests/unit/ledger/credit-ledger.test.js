@@ -1,6 +1,6 @@
 'use strict';
 
-const { CreditLedger, LedgerStatus } = require('../../../src/billing/domain/aggregates');
+const { CreditLedger, LedgerStatus } = require('../../../src/ledger/domain/aggregates');
 
 // ─────────────────────────────────────────────────────────────
 //  Como ler/escrever estes testes (padrão do projeto)
@@ -158,4 +158,50 @@ describe('CreditLedger', () => {
     it.todo('DECISÃO DE DOMÍNIO: estorno maior que o saldo hoje é truncado em 0 (computeBalance usa Math.max); registrar a dívida?');
     it.todo('ledger aberto com 0 crédito já nasce ACTIVE com saldo 0: o primeiro débito devolve false');
   });
+});
+
+describe('CreditLedger: idempotência (eventos podem ser reentregues)', () => {
+  it('creditFromPurchase do mesmo paymentIntentId só vale uma vez e retorna false na repetição', () => {
+    const ledger = ledgerWithCredits(5);
+    const compra = { credits: 50, paymentIntentId: 'pi-1', packId: 'STARTER' };
+
+    expect(ledger.creditFromPurchase(compra)).toBe(true);
+    expect(ledger.creditFromPurchase(compra)).toBe(false);
+
+    expect(ledger.computeBalance().available).toBe(55);
+    expect(ledger.entries).toHaveLength(2);
+  });
+
+  it('repetição de compra de ledger suspenso não emite um segundo BalanceRestored', () => {
+    const ledger = exhaustedLedger();
+    const compra = { credits: 50, paymentIntentId: 'pi-1', packId: 'STARTER' };
+    ledger.creditFromPurchase(compra);
+    ledger.pullDomainEvents();
+
+    ledger.creditFromPurchase(compra);
+
+    expect(ledger.pullDomainEvents()).toEqual([]);
+  });
+
+  it('creditFromRefund do mesmo paymentIntentId só vale uma vez', () => {
+    const ledger = ledgerWithCredits(80);
+    const estorno = { credits: 50, paymentIntentId: 'pi-1' };
+
+    expect(ledger.creditFromRefund(estorno)).toBe(true);
+    expect(ledger.creditFromRefund(estorno)).toBe(false);
+
+    expect(ledger.computeBalance().available).toBe(30);
+  });
+
+  it('compra e estorno do mesmo pagamento são independentes (tipos diferentes)', () => {
+    const ledger = ledgerWithCredits(5);
+    ledger.creditFromPurchase({ credits: 50, paymentIntentId: 'pi-1', packId: 'STARTER' });
+
+    expect(ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' })).toBe(true);
+    expect(ledger.computeBalance().available).toBe(5);
+  });
+
+  // DOMÍNIO: débitos NÃO são idempotentes hoje (a referência do lançamento é o
+  // watchRequestId, não o snapshotId). Reentrega de PriceSnapshotCaptured debita duas vezes.
+  it.todo('debitForSearch com o mesmo snapshotId não debita duas vezes');
 });

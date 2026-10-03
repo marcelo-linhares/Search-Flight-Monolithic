@@ -1,18 +1,42 @@
 'use strict';
 
 // ─────────────────────────────────────────────
-//  Application-layer event handlers
+//  Ledger application layer: event handlers
 //
-//  These are thin subscribers wired to the in-process
-//  event bus. Each listens to one event type and
-//  delegates to the appropriate aggregate.
-//
-//  In MVP: registered with an EventEmitter.
-//  Later:  replace with a message queue consumer.
+//  Thin subscribers wired to the in-process event bus. The Ledger only knows
+//  the PAYLOAD of events from other contexts (userId, credits, ...), never
+//  their classes. Each handler: load aggregate -> one domain call -> save ->
+//  publish the events the aggregate recorded.
 // ─────────────────────────────────────────────
 
-const { CreditLedger, PaymentIntent } = require('../domain/aggregates');
-const { GatewayResultVO }             = require('../domain/value-objects');
+const { CreditLedger } = require('../domain/aggregates');
+
+async function saveAndPublish(ledger, ledgerRepo, eventBus) {
+  await ledgerRepo.save(ledger);
+  for (const event of ledger.pullDomainEvents()) {
+    await eventBus.publish(event);
+  }
+}
+
+// ── OnUserRegistered ──────────────────────────
+// Identity emits this → Ledger opens the user's ledger with gift credits.
+// Idempotent: a second UserRegistered for the same user changes nothing.
+
+class OnUserRegistered {
+  constructor(ledgerRepo, eventBus, { giftCredits = 10 } = {}) {
+    this.ledgerRepo  = ledgerRepo;
+    this.eventBus    = eventBus;
+    this.giftCredits = giftCredits;
+  }
+
+  async handle(event) {
+    const existing = await this.ledgerRepo.findByUserId(event.userId);
+    if (existing) return;
+
+    const ledger = CreditLedger.openForUser(event.userId, this.giftCredits);
+    await saveAndPublish(ledger, this.ledgerRepo, this.eventBus);
+  }
+}
 
 // ── OnCreditsPurchased ────────────────────────
 // Billing emits this → Ledger credits the balance.
@@ -27,8 +51,7 @@ class OnCreditsPurchased {
     let ledger = await this.ledgerRepo.findByUserId(event.userId);
 
     if (!ledger) {
-      // First purchase — ledger was not seeded at registration.
-      // Normally it should exist; create defensively.
+      // Normally the ledger exists since registration; create defensively.
       ledger = CreditLedger.openForUser(event.userId, 0);
     }
 
@@ -38,16 +61,13 @@ class OnCreditsPurchased {
       packId:          event.packId,
     });
 
-    await this.ledgerRepo.save(ledger);
-
-    for (const e of ledger.pullDomainEvents()) {
-      await this.eventBus.publish(e);
-    }
+    await saveAndPublish(ledger, this.ledgerRepo, this.eventBus);
   }
 }
 
 // ── OnPriceSnapshotCaptured ───────────────────
 // Search emits this → Ledger debits 1 credit.
+// If BalanceExhausted is published, Scheduler pauses the user's watches.
 
 class OnPriceSnapshotCaptured {
   constructor(ledgerRepo, eventBus) {
@@ -67,18 +87,12 @@ class OnPriceSnapshotCaptured {
       snapshotId:     event.snapshotId,
     });
 
-    await this.ledgerRepo.save(ledger);
-
-    for (const e of ledger.pullDomainEvents()) {
-      await this.eventBus.publish(e);
-      // If BalanceExhausted was published, the Scheduler context listens
-      // and will pause all active watches for this user.
-    }
+    await saveAndPublish(ledger, this.ledgerRepo, this.eventBus);
   }
 }
 
 // ── OnCreditsRefunded ─────────────────────────
-// Billing emits this → Ledger debits the returned credits.
+// Billing emits this → Ledger removes the refunded credits.
 
 class OnCreditsRefunded {
   constructor(ledgerRepo, eventBus) {
@@ -95,46 +109,13 @@ class OnCreditsRefunded {
       paymentIntentId: event.paymentIntentId,
     });
 
-    await this.ledgerRepo.save(ledger);
-
-    for (const e of ledger.pullDomainEvents()) {
-      await this.eventBus.publish(e);
-    }
-  }
-}
-
-// ── ConfirmPaymentUseCase ─────────────────────
-// Called by the gateway webhook controller.
-
-class ConfirmPaymentUseCase {
-  constructor(paymentIntentRepo, eventBus) {
-    this.paymentIntentRepo = paymentIntentRepo;
-    this.eventBus          = eventBus;
-  }
-
-  async execute({ paymentIntentId, gatewayTransactionId, gatewayStatus }) {
-    const intent = await this.paymentIntentRepo.findById(paymentIntentId);
-    if (!intent) throw new Error(`PaymentIntent "${paymentIntentId}" not found`);
-
-    const result = new GatewayResultVO({ gatewayTransactionId, status: gatewayStatus });
-
-    if (result.isSucceeded()) {
-      intent.confirm(result);
-    } else {
-      intent.fail(result, `Gateway status: ${gatewayStatus}`);
-    }
-
-    await this.paymentIntentRepo.save(intent);
-
-    for (const e of intent.pullDomainEvents()) {
-      await this.eventBus.publish(e);
-    }
+    await saveAndPublish(ledger, this.ledgerRepo, this.eventBus);
   }
 }
 
 module.exports = {
+  OnUserRegistered,
   OnCreditsPurchased,
   OnPriceSnapshotCaptured,
   OnCreditsRefunded,
-  ConfirmPaymentUseCase,
 };

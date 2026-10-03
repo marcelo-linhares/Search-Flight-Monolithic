@@ -1,0 +1,121 @@
+'use strict';
+
+// ─────────────────────────────────────────────
+//  Billing application layer: use cases
+//
+//  Each use case: load aggregate -> one domain call -> save -> publish the
+//  events the aggregate recorded. Billing never touches credits: it only
+//  publishes CreditsPurchased / CreditsRefunded and the Ledger reacts.
+// ─────────────────────────────────────────────
+
+const { PaymentIntent }  = require('../domain/aggregates');
+const { GatewayResultVO } = require('../domain/value-objects');
+
+class PaymentIntentNotFoundError extends Error {
+  constructor(paymentIntentId) {
+    super(`PaymentIntent "${paymentIntentId}" not found`);
+    this.name = 'PaymentIntentNotFoundError';
+    this.paymentIntentId = paymentIntentId;
+  }
+}
+
+async function saveAndPublish(intent, repo, eventBus) {
+  await repo.save(intent);
+  for (const event of intent.pullDomainEvents()) {
+    await eventBus.publish(event);
+  }
+}
+
+// User presses "buy": creates a PENDING PaymentIntent for the chosen pack.
+class InitiatePaymentUseCase {
+  constructor(paymentIntentRepo, eventBus) {
+    this.paymentIntentRepo = paymentIntentRepo;
+    this.eventBus          = eventBus;
+  }
+
+  async execute({ userId, packId }) {
+    const intent = PaymentIntent.initiate({ userId, packId }); // throws on unknown pack
+    await saveAndPublish(intent, this.paymentIntentRepo, this.eventBus);
+
+    return {
+      paymentIntentId: intent.paymentIntentId,
+      packId:          intent.pack.id,
+      credits:         intent.pack.credits,
+      amount:          intent.amount.amount,
+      currency:        intent.amount.currency,
+      status:          intent.status,
+    };
+  }
+}
+
+// Called by the gateway webhook controller.
+class ConfirmPaymentUseCase {
+  constructor(paymentIntentRepo, eventBus) {
+    this.paymentIntentRepo = paymentIntentRepo;
+    this.eventBus          = eventBus;
+  }
+
+  async execute({ paymentIntentId, gatewayTransactionId, gatewayStatus }) {
+    const intent = await this.paymentIntentRepo.findById(paymentIntentId);
+    if (!intent) throw new PaymentIntentNotFoundError(paymentIntentId);
+
+    const result = new GatewayResultVO({ gatewayTransactionId, status: gatewayStatus });
+
+    if (result.isSucceeded()) {
+      intent.confirm(result);
+    } else {
+      intent.fail(result, `Gateway status: ${gatewayStatus}`);
+    }
+
+    await saveAndPublish(intent, this.paymentIntentRepo, this.eventBus);
+  }
+}
+
+// Refund of a confirmed payment. The Ledger removes the credits when it
+// receives CreditsRefunded.
+class RefundPaymentUseCase {
+  constructor(paymentIntentRepo, eventBus) {
+    this.paymentIntentRepo = paymentIntentRepo;
+    this.eventBus          = eventBus;
+  }
+
+  async execute({ paymentIntentId }) {
+    const intent = await this.paymentIntentRepo.findById(paymentIntentId);
+    if (!intent) throw new PaymentIntentNotFoundError(paymentIntentId);
+
+    intent.refund();
+
+    await saveAndPublish(intent, this.paymentIntentRepo, this.eventBus);
+  }
+}
+
+// Read side: payment history of one user, newest first (invoice list).
+class ListUserPayments {
+  constructor(paymentIntentRepo) {
+    this.paymentIntentRepo = paymentIntentRepo;
+  }
+
+  async execute({ userId }) {
+    const intents = await this.paymentIntentRepo.findByUserId(userId);
+
+    return intents
+      .map((i) => ({
+        paymentIntentId: i.paymentIntentId,
+        packId:          i.pack.id,
+        credits:         i.pack.credits,
+        amount:          i.amount.amount,
+        currency:        i.amount.currency,
+        status:          i.status,
+        createdAt:       i.createdAt,
+      }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+}
+
+module.exports = {
+  InitiatePaymentUseCase,
+  ConfirmPaymentUseCase,
+  RefundPaymentUseCase,
+  ListUserPayments,
+  PaymentIntentNotFoundError,
+};
