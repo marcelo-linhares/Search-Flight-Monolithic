@@ -132,4 +132,15 @@ Comandos como git fetch, git checkout e git grep, me fizeram fixar o conheciment
 Agora com o React, apenas acompanhei o time de desenvolvimento na empresa em que trabalho. Não cheguei a fazer um treinamento específico nem nada.
 Mesmo com o pouco tempo de experiência no React, consegui levantar toda a infra necessária (local) para fazer ele funcionar corretamente. Voalá! O Frontend (parcial), está funcionando.
 Ferramentas como o Android Studio, YARN, EXPO-GO também foram sugestões do próprio Claude. Todas as sugestões funcionaram perfeitamente para a simulação que eu precisava.
+A qualidade com que o frontend foi codificado, está realmente bem aceitável para um projeto possível de ser disponibilizado no mercado.
+Faltam obviamente, implementações de login, autenticação segura entre APIs, e que podem ser temas para outro momento da aplicação.
 
+
+---
+
+## Entrada 7 — 2026-10-02 18h e 2026-10-03 08h30m
+
+Outra sessão bem intensa em geração de código e avaliação de testes unitários e integrados.
+Nestas últimas sessões, fizemos quebras importantes. Primeiro, os contextos ledger e billing estavam intríssecos no código. Natural, uma vez que se conectam pela sua natureza de cobrança e fluxo de caixa (entrada e saída de créditos para buscas). De toda forma, decidi separar os dois em duas pastas diferentes dentro do próprio monolito.
+Isso deixou o código mais organizado, mais limpo, e com mais artefatos, obviamente.
+Por fim, estamos terminando a geração do contexto "search-orchestrator" e vamos partir para a refatoração, com métricas pré estabelecidas.

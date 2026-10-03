@@ -14,12 +14,18 @@ Last reviewed: October 2026.
 apps/
   api/                         Node.js monolith (private package @searchfly/api)
     src/
-      app.js                   composition root (event bus + context wiring)
-      shared/                  domain-event.js, in-process-event-bus.js (technical kernel)
+      app.js                   composition root (event bus, contexts, flight provider, clock)
+      server.js                HTTP listener + scheduler timer
+      shared/                  domain-event.js, in-process-event-bus.js, errors.js (technical kernel)
       billing/                 domain (PaymentIntent, CreditPack), application/use-cases.js, infrastructure (in-memory repo), index.js
       ledger/                  domain (CreditLedger, LedgerEntry), application (handlers, queries), infrastructure (in-memory repo), index.js
-    tests/unit/                billing/, ledger/, shared/ (TDD)
-    tests/integration/         billing-ledger.flow.test.js (full flow through the event bus)
+      watch/                   WatchRequest, use cases, handlers, in-memory repo + credit-status projection, index.js
+      scheduler/               ScheduledSearch, RunDueSearchesUseCase, handlers, in-memory repo, index.js
+      search/                  SearchJob, PriceSnapshot, OnSearchJobTriggered, GetPriceHistory, FlightPort contract, index.js
+      integration/             fake-flight-provider.js (deterministic fake; real providers later)
+      http/                    Express 5 app: create-http-app.js, middleware.js, routes/
+    tests/unit/                billing/, ledger/, watch/, scheduler/, search/, integration/, shared/ (TDD)
+    tests/integration/         billing-ledger.flow, search-orchestrator.flow (P0 with fake clock), http-api (supertest), server
     examples/                  billing-example.js, p0-credit-exhaustion-example.js (runnable demos)
     Dockerfile, jest.config.js, package.json, package-lock.json
   mobile/                      Expo SDK 57 client (private package @searchfly/mobile)
@@ -42,16 +48,16 @@ Tooling: Yarn Classic workspaces from the repo root (`yarn install`, `yarn mobil
 
 | Context | Backend (`apps/api`) | Mobile (`apps/mobile/src/modules`) |
 |---------|----------------------|-------------------------------------|
-| Watch Management | not implemented yet | `watch` |
+| Watch Management | `src/watch` (WatchRequest, use cases, handlers) | `watch` |
 | Billing | `src/billing` (PaymentIntent, CreditPack, use cases) | `billing` |
 | Ledger | `src/ledger` (CreditLedger, LedgerEntry, handlers, queries) | `ledger` |
-| Scheduler | not implemented yet | none (no UI; schedule is shown inside the watch detail) |
-| Search | not implemented yet | `search` |
+| Scheduler | `src/scheduler` (ScheduledSearch, run-due-searches) | none (no UI; schedule is shown inside the watch detail) |
+| Search | `src/search` (SearchJob, PriceSnapshot, price history, FlightPort) | `search` |
 | Pricing | not implemented yet | `pricing` |
 | Notification | not implemented yet | `notification` |
-| Integration | not implemented yet | none (admin/debug only) |
+| Integration | `src/integration` (fake flight provider) | none (admin/debug only) |
 
-Billing and Ledger have separate folders, events and value objects and talk only through events on the in-process bus (wired in `src/app.js`). The mobile app mirrors the other contexts with an in-memory mock server so the full flows can be demonstrated before the backend exists.
+Each backend context has its own folders, events and value objects and talks to the others only through events on the in-process bus (wired in `src/app.js`). The mobile app mirrors all contexts with an in-memory mock server so the full flows can be demonstrated before the backend exists.
 
 ---
 
@@ -102,7 +108,7 @@ User buys a pack:
   -> Scheduler resumes watches -> WatchReactivated
 ```
 
-On the backend only the Billing and Ledger part exists; the rest is simulated by the mobile mock server (Profile > Demo controls).
+On the backend, Pricing and Notification are the only contexts missing; they are still simulated by the mobile mock server (Profile > Demo controls). Event flow change: Ledger balance events now go to Watch Management, and the Scheduler follows the watch events (Ledger → Watch Management → Scheduler).
 
 ---
 
@@ -113,16 +119,18 @@ yarn install                 # repo root
 yarn mobile                  # Expo dev server, mock backend by default (see apps/mobile/README.md)
 yarn typecheck               # type-checks the mobile app
 yarn api:test                # backend tests (Jest: unit and integration projects)
+yarn api:coverage            # same, with coverage thresholds
+yarn api:start               # REST API on port 5050 (ENABLE_DEV_ROUTES=true adds POST /api/dev/scheduler/tick)
 docker build -t searchfly-api apps/api
 node apps/api/examples/billing-example.js              # Billing + Ledger lifecycle
-node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across contexts (Search, Scheduler, Notification are fakes)
+node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across the real contexts (fake flight provider)
 ```
 
 ---
 
 ## Known gaps
 
-- **No persistence or HTTP yet:** repositories are in memory and there is no controller layer; `Dockerfile` still has a placeholder `CMD`. Open domain questions are kept as `it.todo` in the tests (for example `NaN` accepted by `PaymentAmountVO`, a `pending` webhook marking a payment as failed, refunds larger than the balance being clamped to zero, debits not idempotent).
+- **No persistence yet:** repositories are in memory. Auth is temporary (`x-user-id` header, no Identity context) and the payment webhook does not verify the gateway signature. Pricing and Notification are not implemented. Open domain questions are kept as `it.todo` in the tests (for example `NaN` accepted by `PaymentAmountVO`, a `pending` webhook marking a payment as failed, refunds larger than the balance being clamped to zero, debits not idempotent).
 - **Push notifications** run only in mock mode inside Expo Go; real push requires a development build (see `apps/mobile/README.md`).
 
 ---
@@ -130,8 +138,8 @@ node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across context
 ## Next steps
 
 1. Decide the open domain questions listed in the `it.todo` items and turn them into tests.
-2. Add HTTP controllers (Express or Fastify) calling the Billing and Ledger use cases, and database repositories behind the same `findBy...` / `save` methods.
-3. Implement the remaining contexts in the order the P0 flow needs them: Watch Management, Scheduler, Search, Pricing, Notification.
+2. Add database repositories behind the same `findBy...` / `save` methods, a real Identity context (auth) and webhook signature verification.
+3. Implement the remaining contexts: Pricing, then Notification.
 4. Point the mobile app to the real API with `EXPO_PUBLIC_API_URL` and keep `packages/domain-events` as the contract (add contract tests).
 5. Replace the in-process event bus with a message queue only when a context is actually extracted from the monolith.
 
@@ -179,3 +187,7 @@ The examples still required the original `src/contexts/...` layout, so they were
 ### October 2026: unit tests, Ledger split and application layer
 
 Unit tests were added for `CreditLedger`, the value objects, the handlers and `PaymentIntent` (see `tests/unit`). The Ledger was then moved out of `src/billing` into its own context `src/ledger` (own aggregates, value objects, events, handlers and queries), the shared technical code went to `src/shared` (`makeEvent`, `InProcessEventBus`), and both contexts got use cases or queries, in-memory repositories and a public `index.js`. `src/app.js` is the composition root and `tests/integration/billing-ledger.flow.test.js` exercises the full flow. Ledger purchases and refunds became idempotent (one entry per payment). `examples/_event-bus.js` was removed in favor of `src/shared/in-process-event-bus.js`; the examples now use `createApp()`.
+
+### October 2026: search-orchestrator and REST API
+
+Watch Management, Scheduler, Search and Integration (a deterministic fake flight provider behind the `FlightPort` contract) were added test-first, plus an Express 5 REST API (`src/http`) and `src/server.js` (HTTP listener plus a scheduler timer). Errors share one hierarchy in `src/shared/errors.js` (`DomainError` subclasses with `httpStatus` and `code`); Billing and Ledger errors were moved onto it. The event flow became Ledger → Watch Management → Scheduler, `jobId` is the idempotency key between Scheduler and Search, and the P0 flow has an integration test with a fake clock and a rewritten example that uses the real contexts. The `Dockerfile` now starts the server (`npm start`). Coverage is about 98% of statements.

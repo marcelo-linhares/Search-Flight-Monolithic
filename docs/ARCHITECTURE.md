@@ -40,32 +40,38 @@ The visual architecture pages live next to this file: `SearchFly — Solution Ar
 
 | Context | Owns | Backend today | Mobile today |
 |---------|------|---------------|--------------|
-| Watch Management | WatchRequest, lifecycle (`active`, `suspended_credits`, `expired`, `cancelled`) | not implemented | `modules/watch` |
+| Watch Management | WatchRequest, lifecycle (`active`, `suspended_credits`, `expired`, `cancelled`) | `src/watch` (domain, use cases, handlers, in-memory repository and credit-status projection) | `modules/watch` |
 | Billing | PaymentIntent, CreditPack, gateway interaction | `src/billing` (domain, use cases, in-memory repository) | `modules/billing` |
 | Ledger | CreditLedger, LedgerEntry, the credit balance | `src/ledger` (domain, handlers, queries, in-memory repository) | `modules/ledger` |
-| Scheduler | When each watch runs; pausing and resuming | not implemented | no module (schedule shown in the watch detail) |
-| Search | PriceSnapshot, search execution | not implemented | `modules/search` |
+| Scheduler | When each watch runs; pausing, resuming and ending the search window | `src/scheduler` (ScheduledSearch, run-due-searches use case, handlers, in-memory repository) | no module (schedule shown in the watch detail) |
+| Search | SearchJob, PriceSnapshot, price history | `src/search` (domain, handler, price-history query, in-memory repository, FlightPort contract) | `modules/search` |
 | Pricing | Price-drop and anomaly detection | not implemented | `modules/pricing` |
 | Notification | Alerts, channel preferences, push delivery | not implemented | `modules/notification` |
-| Integration | Providers (flight data, payment gateway adapters) | not implemented | no module (admin/debug only) |
+| Integration | Providers (flight data, payment gateway adapters) | `src/integration` (deterministic fake flight provider; real providers later) | no module (admin/debug only) |
 
-Billing and Ledger each have their own folder, events and value objects. They never import each other: the Ledger only knows the payload of Billing's events. `src/app.js` is the composition root that creates the event bus and wires both contexts.
+Every context has its own folder, events and value objects. They never import each other: a context only knows the payload of the events it subscribes to. `src/app.js` is the composition root that creates the event bus, wires the contexts and injects the flight provider.
 
 ### Context map (who reacts to whom)
 
 ```
 Identity ── UserRegistered ────────────────> Ledger ── GiftCreditsGranted ──> Notification
-Billing ── CreditsPurchased ──────────────> Ledger ── BalanceRestored ──> Scheduler ──> Watch Management
+Billing ── CreditsPurchased ──────────────> Ledger ── BalanceRestored ──> Watch Management ── WatchReactivated ──> Scheduler
 Billing ── CreditsRefunded ───────────────> Ledger ── BalanceExhausted (if it reaches zero)
-Search  ── PriceSnapshotCaptured ─────────> Ledger ── SearchCreditDebited ──> audit log
-                                            Ledger ── BalanceExhausted ───> Scheduler ──> Watch Management
+Ledger  ── BalanceExhausted ──────────────> Watch Management ── WatchSuspendedDueToCredits ──> Scheduler (pauses)
+Watch Management ── WatchCreated ─────────> Scheduler (first search runs immediately)
+Watch Management ── WatchCancelled / WatchExpired ──> Scheduler (stops the schedule)
+Scheduler ── SearchJobTriggered (jobId) ──> Search ── PriceSnapshotCaptured ──> Ledger ── SearchCreditDebited ──> audit log
+                                            Search ── SearchJobFailed (no charge)
+Scheduler ── SearchWindowEnded ───────────> Watch Management ── WatchExpired
 Watch Management ── WatchSuspendedDueToCredits / WatchReactivated ──> Notification ──> push to the client
 Search  ── PriceSnapshotCaptured ─────────> Pricing ── PriceDropDetected ──> Notification
 Billing ── PaymentFailed ─────────────────> Notification
 Ledger  ── GiftCreditsGranted ────────────> Notification
 ```
 
-Only the Billing and Ledger part exists in `apps/api` (Identity's `UserRegistered` and Search's `PriceSnapshotCaptured` are published by tests and examples); the rest is simulated by the mobile mock server (Profile > Demo controls).
+Watch Management is the owner of the watch lifecycle, so the Ledger's balance events go to it first and the Scheduler follows the watch events (before, the map showed Ledger → Scheduler directly). `jobId` is the idempotency key between Scheduler and Search.
+
+Billing, Ledger, Watch Management, Scheduler, Search and Integration exist in `apps/api`. Identity is a stand-in (`POST /api/users` publishes `UserRegistered`); Pricing and Notification are not implemented yet and are still simulated by the mobile mock server (Profile > Demo controls).
 
 ---
 
@@ -88,30 +94,57 @@ Only the Billing and Ledger part exists in `apps/api` (Identity's `UserRegistere
 - **Domain:** aggregates enforce invariants and record domain events (`pullDomainEvents()` hands them to the caller); value objects are immutable (frozen) and compared by value; events are frozen facts created by factories (`makeEvent`: `eventId`, `occurredAt`, `type`, payload).
 - **Application:** use cases (for example `ConfirmPaymentUseCase`) load and save aggregates through repositories and publish the events the aggregate recorded. Event handlers (`OnCreditsPurchased`, `OnPriceSnapshotCaptured`, `OnCreditsRefunded`) are thin subscribers that delegate to an aggregate.
 - **Infrastructure:** repositories (`findByUserId`, `save`), payment gateway adapters, the event bus implementation. Gateway vocabulary is translated here, so the domain never sees gateway language.
-- **Presentation:** HTTP controllers calling use cases. Not implemented yet.
+- **Presentation:** an Express 5 app in `src/http` (routes call use cases and queries only; one error handler maps `DomainError` subclasses to HTTP status codes). It sits next to the contexts, not inside them.
 
 ### Backend layout today
 
 ```
 apps/api/src/
-  app.js                       composition root: creates the event bus and wires the contexts
+  app.js                       composition root: event bus, contexts, flight provider, clock
+  server.js                    startServer(): HTTP listener + scheduler timer (SCHEDULER_TICK_MS)
   shared/                      technical kernel only (no domain concepts)
     domain-event.js            makeEvent(type, payload)
     in-process-event-bus.js    subscribe(type, handler) / publish(event)
-  billing/
-    index.js                   public entry point: registerBilling({ eventBus })
-    domain/                    aggregates.js (PaymentIntent, CreditPack), value-objects.js, events.js
-    application/use-cases.js   InitiatePayment, ConfirmPayment, RefundPayment, ListUserPayments
-    infrastructure/            in-memory-payment-intent-repository.js
-  ledger/
-    index.js                   public entry point: registerLedger({ eventBus })
-    domain/                    aggregates.js (CreditLedger, LedgerEntry), value-objects.js, events.js
-    application/               handlers.js (OnUserRegistered, OnCreditsPurchased, OnPriceSnapshotCaptured,
-                               OnCreditsRefunded), queries.js (GetCreditBalance, GetLedgerHistory)
-    infrastructure/            in-memory-ledger-repository.js
+    errors.js                  DomainError, ValidationError 400, ForbiddenError 403, NotFoundError 404, ConflictError 409
+  billing/                     PaymentIntent, CreditPack; use cases: InitiatePayment, ConfirmPayment, RefundPayment,
+                               ListUserPayments, ListCreditPacks
+  ledger/                      CreditLedger, LedgerEntry; handlers (UserRegistered, CreditsPurchased,
+                               PriceSnapshotCaptured, CreditsRefunded); queries (GetCreditBalance, GetLedgerHistory)
+  watch/                       WatchRequest; use cases (CreateWatch, CancelWatch, GetWatch, ListUserWatches);
+                               handlers (OnBalanceExhausted, OnBalanceRestored, OnSearchWindowEnded);
+                               infrastructure: watch repository, credit-status projection fed only by events
+  scheduler/                   ScheduledSearch; RunDueSearchesUseCase; handlers follow the watch events
+  search/                      SearchJob, PriceSnapshot; OnSearchJobTriggered (idempotent by jobId);
+                               GetPriceHistory; application/flight-port.js (the contract Integration implements)
+  integration/                 fake-flight-provider.js (deterministic, seedable, failNext / noOffersFor)
+  http/                        create-http-app.js, middleware.js, routes/{users,credits,payments,watches,dev}.js
+    (each context folder has index.js, domain/, application/, infrastructure/)
 ```
 
 The in-memory repositories store a snapshot and rebuild a fresh aggregate on every read, like a real database would, so tests catch a forgotten `save()`. Replace them with database repositories (same `findBy...` / `save` methods) when persistence is added. Ledger entries for purchases and refunds are idempotent (one entry per payment), because an event bus can redeliver events.
+
+### REST API (Express 5)
+
+Authentication is temporary: send the user id in the `x-user-id` header (there is no Identity context yet). Errors always have the shape `{ error: { code, message } }`.
+
+| Method and path | Purpose | Auth |
+|-----------------|---------|------|
+| `GET /health` | liveness | no |
+| `POST /api/users` | register a user (publishes `UserRegistered`, gift credits) | no |
+| `POST /api/payments/webhook` | gateway result (signature verification is a TODO) | no |
+| `GET /api/credits` | credit balance (Ledger) | yes |
+| `GET /api/credits/history` | ledger entries | yes |
+| `GET /api/credit-packs` | credit packs for sale | yes |
+| `POST /api/payments` | create a checkout for a pack (201) | yes |
+| `GET /api/payments` | list the user's payments | yes |
+| `POST /api/watches` | create a watch (201) | yes |
+| `GET /api/watches` | list the user's watches | yes |
+| `GET /api/watches/:id` | one watch (404 if it belongs to someone else) | yes |
+| `DELETE /api/watches/:id` | cancel a watch | yes |
+| `GET /api/watches/:id/price-history` | snapshots, lowest and latest price | yes |
+| `POST /api/dev/scheduler/tick` | run the due searches now (only with `ENABLE_DEV_ROUTES=true`) | yes |
+
+The refund use case is not exposed over HTTP on purpose; it will be an admin action. In production the scheduler runs on a timer inside `server.js` (`SCHEDULER_TICK_MS`, default 60000, `0` disables it).
 
 ---
 
@@ -160,7 +193,7 @@ Backend tests run with **Jest** (`apps/api/jest.config.js`). The configuration d
 | `integration` | Use cases and handlers wired together with in-memory repositories and an in-process bus. | a global setup file |
 | `stage` | End-to-end behavior against a running server, a database and mocked providers; longer timeout. | global setup and teardown |
 
-Unit tests live in `tests/unit/{billing,ledger,shared}` (aggregates, value objects, use cases, handlers, queries, repositories, event bus). `tests/integration/billing-ledger.flow.test.js` runs the whole Billing + Ledger flow through the real in-memory bus and `createApp()` (registration gift, purchase, credit exhaustion, reactivation, refund). The `stage` project has placeholder setup files (`tests/stage/setup.js`, `tests/stage/teardown.js`) that do nothing yet; fill them in when the first end-to-end test is written. `npm test` runs the unit and integration projects. Coverage thresholds are 80% branches and 85% functions and lines (`npm run test:coverage`). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
+Unit tests live in `tests/unit/{billing,ledger,watch,scheduler,search,integration,shared}` (aggregates, value objects, use cases, handlers, queries, repositories, fake provider, event bus). Integration tests: `billing-ledger.flow.test.js` (Billing + Ledger), `search-orchestrator.flow.test.js` (the P0 flow across Watch, Scheduler, Search, Ledger and Billing with a fake clock), `http-api.test.js` (HTTP contract with supertest) and `server.test.js` (real port and scheduler timer). Together they cover about 98% of statements. The `stage` project has placeholder setup files (`tests/stage/setup.js`, `tests/stage/teardown.js`) that do nothing yet; fill them in when the first end-to-end test is written. `npm test` runs the unit and integration projects. Coverage thresholds are 80% branches and 85% functions and lines (`npm run test:coverage`). The mobile app has no automated tests yet; its checks are `yarn typecheck` and `npx expo-doctor`.
 
 ---
 
@@ -171,9 +204,11 @@ yarn install                        # repo root
 yarn mobile                         # Expo dev server (mock backend by default)
 yarn typecheck                      # type-checks the mobile app
 yarn api:test                       # backend tests
+yarn api:coverage                   # backend tests with coverage thresholds
+yarn api:start                      # REST API on port 5050 (ENABLE_DEV_ROUTES=true adds the dev tick route)
 docker build -t searchfly-api apps/api
 node apps/api/examples/billing-example.js              # Billing + Ledger lifecycle
-node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across contexts (fakes for the missing contexts)
+node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across the real contexts with a fake flight provider
 ```
 
 `apps/api` keeps its own `package-lock.json` because the Docker build context is `apps/api` and the image installs with `npm install`.

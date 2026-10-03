@@ -1,5 +1,7 @@
 'use strict';
 
+const { ValidationError } = require('../../shared/errors');
+
 // ── PackDefinitionVO ──────────────────────────
 // Describes a purchasable credit pack (catalogue entry, not a purchase record).
 
@@ -20,7 +22,7 @@ class PackDefinitionVO {
 
   static fromId(id) {
     const pack = PackDefinitionVO.PACKS[id];
-    if (!pack) throw new Error(`PackDefinitionVO: unknown pack id "${id}"`);
+    if (!pack) throw new ValidationError(`PackDefinitionVO: unknown pack id "${id}"`);
     return pack;
   }
 
@@ -40,10 +42,10 @@ class PackDefinitionVO {
 class PaymentAmountVO {
   constructor(amount, currency) {
     if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-      throw new Error(`PaymentAmountVO: amount must be a finite positive number, got ${amount}`);
+      throw new ValidationError(`PaymentAmountVO: amount must be a finite positive number, got ${amount}`);
     }
     if (typeof currency !== 'string' || currency.length !== 3) {
-      throw new Error('PaymentAmountVO: currency must be 3-char ISO code');
+      throw new ValidationError('PaymentAmountVO: currency must be 3-char ISO code');
     }
     this.amount   = Math.round(amount * 100) / 100;
     this.currency = currency.toUpperCase();
@@ -67,7 +69,7 @@ class PaymentAmountVO {
 
 class GatewayResultVO {
   constructor({ gatewayTransactionId, status, rawResponse = null }) {
-    if (!gatewayTransactionId) throw new Error('GatewayResultVO: gatewayTransactionId required');
+    if (!gatewayTransactionId) throw new ValidationError('GatewayResultVO: gatewayTransactionId required');
     this.gatewayTransactionId = gatewayTransactionId;
     this.status               = status;   // 'succeeded' | 'failed' | 'pending'
     this.rawResponse          = rawResponse;
