@@ -4,7 +4,9 @@
 // UIs and other contexts never derive it from Billing data.
 // Queries return plain objects (DTOs), never aggregates.
 
-class LedgerNotFoundError extends Error {
+const { NotFoundError } = require('../../shared/errors');
+
+class LedgerNotFoundError extends NotFoundError {
   constructor(userId) {
     super(`Ledger for user "${userId}" not found`);
     this.name = 'LedgerNotFoundError';

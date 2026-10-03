@@ -259,3 +259,15 @@ describe('ListUserPayments', () => {
     expect(await new ListUserPayments(fakeIntentRepo(makeCalls())).execute({ userId: 'u-1' })).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────
+describe('ListCreditPacks', () => {
+  const { ListCreditPacks } = require('../../../src/billing/application/use-cases');
+
+  it('lista o catálogo de pacotes com preço por crédito', async () => {
+    const packs = await new ListCreditPacks().execute();
+
+    expect(packs.map((p) => p.packId)).toEqual(['STARTER', 'EXPLORER', 'PROFESSIONAL']);
+    expect(packs[0]).toEqual({ packId: 'STARTER', credits: 50, price: 9.9, currency: 'BRL', pricePerCredit: 0.198 });
+  });
+});

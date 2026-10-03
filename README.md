@@ -4,7 +4,7 @@ SearchFly — DDD flight price tracker. A Node.js monolith (8 bounded contexts) 
 
 ```
 apps/
-  api/      Node.js monolith (src/billing, src/ledger, src/shared, tests, examples, Dockerfile)
+  api/      Node.js monolith (src/{billing,ledger,watch,scheduler,search,integration,http}, src/shared, tests, examples, Dockerfile)
   mobile/   Expo RN client (feat/mobile-app)
 packages/
   domain-events/   shared DTOs + event contract (server <-> client)
@@ -19,6 +19,7 @@ docs/              architecture, wireframes, experiment log
 ```bash
 cd apps/api && npm install       # apps/api keeps its own package-lock.json (Docker build context)
 npm test
+yarn api:start                   # REST API on http://localhost:5050 (see docs/ARCHITECTURE.md for endpoints)
 docker build -t searchfly-api apps/api
 ```
 

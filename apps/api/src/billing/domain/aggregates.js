@@ -3,6 +3,7 @@
 const { randomUUID } = require('crypto');
 const { PackDefinitionVO, PaymentAmountVO, GatewayResultVO } = require('./value-objects');
 const Events = require('./events');
+const { ConflictError, ValidationError } = require('../../shared/errors');
 
 // ═══════════════════════════════════════════════
 //  BILLING CONTEXT
@@ -46,13 +47,13 @@ class PaymentIntent {
   // Called by webhook handler when payment gateway confirms success.
   confirm(gatewayResult) {
     if (!(gatewayResult instanceof GatewayResultVO)) {
-      throw new Error('PaymentIntent: expected GatewayResultVO');
+      throw new ValidationError('PaymentIntent: expected GatewayResultVO');
     }
     if (this.status !== PaymentStatus.PENDING) {
-      throw new Error(`PaymentIntent: cannot confirm from status "${this.status}"`);
+      throw new ConflictError(`PaymentIntent: cannot confirm from status "${this.status}"`);
     }
     if (!gatewayResult.isSucceeded()) {
-      throw new Error('PaymentIntent: gateway result is not succeeded');
+      throw new ConflictError('PaymentIntent: gateway result is not succeeded');
     }
 
     this.status        = PaymentStatus.CONFIRMED;
@@ -78,7 +79,7 @@ class PaymentIntent {
   // Called when gateway reports failure.
   fail(gatewayResult, reason) {
     if (this.status !== PaymentStatus.PENDING) {
-      throw new Error(`PaymentIntent: cannot fail from status "${this.status}"`);
+      throw new ConflictError(`PaymentIntent: cannot fail from status "${this.status}"`);
     }
     this.status        = PaymentStatus.FAILED;
     this.gatewayResult = gatewayResult;
@@ -93,7 +94,7 @@ class PaymentIntent {
   // Called when a confirmed payment is refunded.
   refund() {
     if (this.status !== PaymentStatus.CONFIRMED) {
-      throw new Error(`PaymentIntent: cannot refund from status "${this.status}"`);
+      throw new ConflictError(`PaymentIntent: cannot refund from status "${this.status}"`);
     }
     this.status = PaymentStatus.REFUNDED;
     this.#record(Events.CreditsRefunded({

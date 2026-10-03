@@ -9,9 +9,10 @@
 // ─────────────────────────────────────────────
 
 const { PaymentIntent }  = require('../domain/aggregates');
-const { GatewayResultVO } = require('../domain/value-objects');
+const { GatewayResultVO, PackDefinitionVO } = require('../domain/value-objects');
+const { NotFoundError }   = require('../../shared/errors');
 
-class PaymentIntentNotFoundError extends Error {
+class PaymentIntentNotFoundError extends NotFoundError {
   constructor(paymentIntentId) {
     super(`PaymentIntent "${paymentIntentId}" not found`);
     this.name = 'PaymentIntentNotFoundError';
@@ -112,10 +113,24 @@ class ListUserPayments {
   }
 }
 
+// Read side: the credit pack catalogue shown on the purchase screen.
+class ListCreditPacks {
+  async execute() {
+    return Object.values(PackDefinitionVO.PACKS).map((p) => ({
+      packId:         p.id,
+      credits:        p.credits,
+      price:          p.price,
+      currency:       p.currency,
+      pricePerCredit: p.pricePerCredit(),
+    }));
+  }
+}
+
 module.exports = {
   InitiatePaymentUseCase,
   ConfirmPaymentUseCase,
   RefundPaymentUseCase,
   ListUserPayments,
+  ListCreditPacks,
   PaymentIntentNotFoundError,
 };

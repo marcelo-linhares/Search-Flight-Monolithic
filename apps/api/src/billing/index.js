@@ -11,6 +11,7 @@ const {
   ConfirmPaymentUseCase,
   RefundPaymentUseCase,
   ListUserPayments,
+  ListCreditPacks,
 } = require('./application/use-cases');
 const { InMemoryPaymentIntentRepository } = require('./infrastructure/in-memory-payment-intent-repository');
 
@@ -21,6 +22,7 @@ function registerBilling({ eventBus, paymentIntentRepo = new InMemoryPaymentInte
     confirmPayment:  new ConfirmPaymentUseCase(paymentIntentRepo, eventBus),
     refundPayment:   new RefundPaymentUseCase(paymentIntentRepo, eventBus),
     listUserPayments: new ListUserPayments(paymentIntentRepo),
+    listCreditPacks: new ListCreditPacks(),
   };
 }
 

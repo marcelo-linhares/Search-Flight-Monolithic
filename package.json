@@ -10,7 +10,9 @@
     "packages/*"
   ],
   "scripts": {
+    "api:start": "yarn workspace @searchfly/api start",
     "api:test": "yarn workspace @searchfly/api test",
+    "api:coverage": "yarn workspace @searchfly/api test:coverage",
     "mobile": "yarn workspace @searchfly/mobile start",
     "typecheck": "yarn workspace @searchfly/mobile tsc --noEmit"
   },
