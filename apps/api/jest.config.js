@@ -26,6 +26,9 @@ module.exports = {
     },
   ],
   collectCoverageFrom: ['src/**/*.js'],
+  // V8 coverage instead of Babel instrumentation: the Babel path failed on Windows
+  // (all suites "failed to run" with --coverage inside OneDrive).
+  coverageProvider: 'v8',
   coverageThreshold: {
     global: { branches: 80, functions: 85, lines: 85 },
   },
