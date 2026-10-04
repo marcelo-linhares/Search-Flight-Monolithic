@@ -257,6 +257,19 @@ describe('OnPriceSnapshotCaptured', () => {
     expect(calls).toEqual(['save', 'publish:SearchCreditDebited', 'publish:BalanceExhausted']);
   });
 
+  it('evento reentregue (mesmo snapshotId): debita só uma vez', async () => {
+    const calls = makeCalls();
+    const repo = fakeLedgerRepo(calls, [ledgerWithCredits(5)]);
+    const bus = fakeEventBus(calls);
+    const handler = new OnPriceSnapshotCaptured(repo, bus);
+
+    await handler.handle(snapshotEvent);
+    await handler.handle(snapshotEvent);
+
+    expect((await repo.findByUserId('u-1')).computeBalance().available).toBe(4);
+    expect(bus.types()).toEqual(['SearchCreditDebited']);
+  });
+
   // DECISÃO DE DOMÍNIO: com ledger esgotado o handler salva e termina em
   // silêncio, apesar de debitForSearch retornar false. Uma busca já executada
   // sem crédito = receita perdida. Deveria publicar um evento (ex.: SearchRanWithoutCredit)?
@@ -289,6 +302,18 @@ describe('OnCreditsRefunded', () => {
     expect((await repo.findByUserId('u-1')).status).toBe(LedgerStatus.SUSPENDED);
     expect(bus.types()).toEqual(['BalanceExhausted']);
     expect(calls).toEqual(['save', 'publish:BalanceExhausted']);
+  });
+
+  it('estorno maior que o saldo: o handler propaga ConflictError e não salva nada', async () => {
+    const calls = makeCalls();
+    const repo = fakeLedgerRepo(calls, [ledgerWithCredits(10)]);
+    const bus = fakeEventBus(calls);
+
+    await expect(new OnCreditsRefunded(repo, bus).handle(refundEvent))
+      .rejects.toMatchObject({ httpStatus: 409 });
+
+    expect((await repo.findByUserId('u-1')).computeBalance().available).toBe(10);
+    expect(calls).toEqual([]);
   });
 
   it('usuário sem ledger: ignora em silêncio (sem save, sem eventos)', async () => {

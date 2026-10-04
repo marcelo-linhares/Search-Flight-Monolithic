@@ -44,6 +44,16 @@ class PaymentIntent {
     return intent; // no event yet — gateway hasn't responded
   }
 
+  // True when this gateway result was already applied (webhooks are redelivered).
+  // 'succeeded' stays true after a refund; 'pending' never settles anything.
+  hasSettledWith(gatewayResult) {
+    if (gatewayResult.isSucceeded()) {
+      return [PaymentStatus.CONFIRMED, PaymentStatus.REFUNDED].includes(this.status);
+    }
+    if (gatewayResult.isFailed()) return this.status === PaymentStatus.FAILED;
+    return false;
+  }
+
   // Called by webhook handler when payment gateway confirms success.
   confirm(gatewayResult) {
     if (!(gatewayResult instanceof GatewayResultVO)) {

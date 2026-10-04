@@ -62,6 +62,11 @@ class ConfirmPaymentUseCase {
 
     const result = new GatewayResultVO({ gatewayTransactionId, status: gatewayStatus });
 
+    // "pending" carries no news (the final result comes in another webhook), and
+    // a redelivered webhook must not fail: gateways would keep retrying it.
+    // A CONTRADICTORY result (failed after confirmed) is still a ConflictError.
+    if (result.isPending() || intent.hasSettledWith(result)) return;
+
     if (result.isSucceeded()) {
       intent.confirm(result);
     } else {

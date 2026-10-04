@@ -6,6 +6,8 @@
 // ── EntryTypeVO ────────────────────────────────
 // Describes why a ledger entry exists.
 
+const { ValidationError, ConflictError } = require('../../shared/errors');
+
 const VALID_ENTRY_TYPES = ['CREDIT_PURCHASE', 'CREDIT_GIFT', 'SEARCH_DEBIT', 'REFUND', 'ADJUSTMENT'];
 
 class EntryTypeVO {
@@ -17,10 +19,18 @@ class EntryTypeVO {
     Object.freeze(this);
   }
 
-  isDebit()  { return this.value === 'SEARCH_DEBIT'; }
-  isCredit() { return ['CREDIT_PURCHASE', 'CREDIT_GIFT', 'REFUND', 'ADJUSTMENT'].includes(this.value); }
+  // A refund takes back credits the user bought, so it is a debit (the ledger
+  // already stores it as a negative entry).
+  isDebit()  { return ['SEARCH_DEBIT', 'REFUND'].includes(this.value); }
+  isCredit() { return ['CREDIT_PURCHASE', 'CREDIT_GIFT', 'ADJUSTMENT'].includes(this.value); }
 
   toString() { return this.value; }
+}
+
+function assertPositiveInteger(amount) {
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new ValidationError('CreditBalanceVO: amount must be a positive integer');
+  }
 }
 
 // ── CreditBalanceVO ─────────────────────────────
@@ -38,12 +48,15 @@ class CreditBalanceVO {
   effective() { return this.available - this.reserved; }
   isExhausted() { return this.effective() <= 0; }
 
+  // Spends only the effective balance: reserved credits cannot be debited.
   debit(amount) {
-    if (amount > this.available) throw new Error('CreditBalanceVO: insufficient credits');
+    assertPositiveInteger(amount);
+    if (amount > this.effective()) throw new ConflictError('CreditBalanceVO: insufficient credits');
     return new CreditBalanceVO(this.available - amount, this.reserved);
   }
 
   credit(amount) {
+    assertPositiveInteger(amount);
     return new CreditBalanceVO(this.available + amount, this.reserved);
   }
 }

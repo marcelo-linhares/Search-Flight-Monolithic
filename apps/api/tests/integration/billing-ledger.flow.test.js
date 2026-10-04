@@ -121,6 +121,23 @@ describe('Billing + Ledger (fluxo completo por eventos)', () => {
     expect(await balance(app)).toEqual({ userId: USER, available: 0, status: 'SUSPENDED' });
   });
 
+  // DECISÃO (out/2026): estorno maior que o saldo é rejeitado pelo Ledger (409).
+  // LIMITAÇÃO CONHECIDA: Billing já gravou o pagamento como REFUNDED antes de
+  // publicar CreditsRefunded (os contextos só conversam por eventos), então o
+  // pagamento e o ledger ficam divergentes. Corrigir exige um fluxo em duas etapas
+  // (Billing pede o estorno, Ledger aceita, Billing marca REFUNDED).
+  it('estorno maior que o saldo: o Ledger rejeita e o saldo não muda', async () => {
+    await registerUser(app);
+    const paymentIntentId = await buy(app, 'STARTER'); // 10 + 50
+    await searchRuns(app, 20);                         // gasta 20 -> saldo 40
+
+    await expect(app.billing.refundPayment.execute({ paymentIntentId }))
+      .rejects.toThrow(/handler\(s\) failed for "CreditsRefunded"/);
+
+    expect((await balance(app)).available).toBe(40);
+    expect((await app.billing.listUserPayments.execute({ userId: USER }))[0].status).toBe('REFUNDED'); // divergência conhecida
+  });
+
   it('histórico do ledger registra presente, débitos e compra; Billing lista o pagamento', async () => {
     await registerUser(app);
     await searchRuns(app, 2);

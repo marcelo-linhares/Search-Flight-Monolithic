@@ -35,14 +35,16 @@ describe('EntryTypeVO', () => {
     expect(() => new EntryTypeVO('BONUS')).toThrow(/invalid type "BONUS".*CREDIT_PURCHASE/);
   });
 
-  it('SEARCH_DEBIT é débito e não é crédito', () => {
-    const entry = new EntryTypeVO('SEARCH_DEBIT');
+  // DECISÃO (out/2026): REFUND é débito. O estorno remove do usuário os créditos
+  // que ele comprou, e o ledger já grava a entrada com valor negativo.
+  it.each(['SEARCH_DEBIT', 'REFUND'])('%s é débito e não é crédito', (type) => {
+    const entry = new EntryTypeVO(type);
 
     expect(entry.isDebit()).toBe(true);
     expect(entry.isCredit()).toBe(false);
   });
 
-  it.each(['CREDIT_PURCHASE', 'CREDIT_GIFT', 'REFUND', 'ADJUSTMENT'])(
+  it.each(['CREDIT_PURCHASE', 'CREDIT_GIFT', 'ADJUSTMENT'])(
     '%s é crédito e não é débito',
     (type) => {
       const entry = new EntryTypeVO(type);
@@ -68,9 +70,6 @@ describe('EntryTypeVO', () => {
     expect(tentarMutar(entry, 'value', 'SEARCH_DEBIT')).toThrow(TypeError);
   });
 
-  // DECISÃO DE DOMÍNIO: REFUND é "crédito" no VO, mas CreditLedger grava o
-  // estorno como entrada negativa. Vale alinhar a semântica do nome.
-  it.todo('documenta/alinha a semântica de REFUND (crédito no VO vs entrada negativa no ledger)');
 });
 
 // ─────────────────────────────────────────────
@@ -117,6 +116,24 @@ describe('CreditBalanceVO', () => {
     expect(() => new CreditBalanceVO(3).debit(4)).toThrow(/insufficient credits/);
   });
 
+  // DECISÃO (out/2026): débito respeita o saldo EFETIVO (available - reserved).
+  it('debit não pode gastar créditos reservados', () => {
+    const saldo = new CreditBalanceVO(10, 8);
+
+    expect(() => saldo.debit(3)).toThrow(/insufficient credits/);
+    expect(saldo.debit(2).available).toBe(8);
+  });
+
+  it.each([0, -1, 1.5, NaN, Infinity, '2', null, undefined])(
+    'debit e credit rejeitam quantidade que não é inteiro positivo (%p)',
+    (amount) => {
+      const saldo = new CreditBalanceVO(10);
+
+      expect(() => saldo.debit(amount)).toThrow(/amount must be a positive integer/);
+      expect(() => saldo.credit(amount)).toThrow(/amount must be a positive integer/);
+    },
+  );
+
   it('credit devolve NOVO saldo somado e preserva reserved', () => {
     const original = new CreditBalanceVO(10, 2);
 
@@ -130,10 +147,4 @@ describe('CreditBalanceVO', () => {
   it('é imutável', () => {
     expect(tentarMutar(new CreditBalanceVO(10), 'available', 99)).toThrow(TypeError);
   });
-
-  // DECISÃO DE DOMÍNIO: debit só compara com `available`, não com `effective()`.
-  // Com reserved > 0 é possível debitar créditos já reservados. Intencional?
-  it.todo('debit respeita créditos reservados (effective) ou documenta que não');
-  // debit(-n) hoje AUMENTA o saldo e credit(-n) pode estourar a invariante.
-  it.todo('debit e credit rejeitam quantidade negativa ou zero');
 });

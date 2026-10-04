@@ -157,7 +157,10 @@ describe('GatewayResultVO', () => {
     expect(tentarMutar(result, 'status', 'succeeded')).toThrow(TypeError);
   });
 
-  // DECISÃO DE DOMÍNIO: status fora de succeeded|failed|pending hoje é aceito
-  // (todos os predicados retornam false). Deveria lançar erro?
-  it.todo('rejeita status desconhecido');
+  // DECISÃO (out/2026): status fora de succeeded|failed|pending é rejeitado,
+  // para um status inesperado do gateway aparecer na hora em vez de ser ignorado.
+  it.each(['paid', 'SUCCEEDED', '', null, undefined])('rejeita status desconhecido (%p)', (status) => {
+    expect(() => new GatewayResultVO({ gatewayTransactionId: 'tx-1', status }))
+      .toThrow(/status must be one of succeeded, failed, pending/);
+  });
 });

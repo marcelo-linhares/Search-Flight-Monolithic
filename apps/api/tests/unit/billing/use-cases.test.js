@@ -123,7 +123,7 @@ describe('ConfirmPaymentUseCase', () => {
     expect(calls).toEqual([]);
   });
 
-  it('webhook duplicado: segunda confirmação lança erro e não publica de novo', async () => {
+  it('webhook duplicado "succeeded": segunda chamada é ignorada (idempotente) e não publica de novo', async () => {
     const calls = makeCalls();
     const intent = pendingIntent('STARTER');
     const repo = fakeIntentRepo(calls, [intent]);
@@ -131,10 +131,66 @@ describe('ConfirmPaymentUseCase', () => {
     const useCase = new ConfirmPaymentUseCase(repo, bus);
     const input = webhook({ paymentIntentId: intent.paymentIntentId });
     await useCase.execute(input);
+    const savesBefore = calls.filter((c) => c === 'save').length;
 
-    await expect(useCase.execute(input)).rejects.toThrow(/cannot confirm from status "CONFIRMED"/);
+    await expect(useCase.execute(input)).resolves.toBeUndefined();
 
     expect(bus.types()).toEqual(['PaymentConfirmed', 'CreditsPurchased']); // só os da 1ª vez
+    expect(calls.filter((c) => c === 'save')).toHaveLength(savesBefore);
+  });
+
+  it('"succeeded" repetido depois de reembolso também é ignorado (pagamento REFUNDED)', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const repo = fakeIntentRepo(calls, [intent]);
+    const bus = fakeEventBus(calls);
+    const input = webhook({ paymentIntentId: intent.paymentIntentId });
+    await new ConfirmPaymentUseCase(repo, bus).execute(input);
+    await new RefundPaymentUseCase(repo, bus).execute({ paymentIntentId: intent.paymentIntentId });
+    const before = bus.types();
+
+    await new ConfirmPaymentUseCase(repo, bus).execute(input);
+
+    expect(bus.types()).toEqual(before);
+    expect((await repo.findById(intent.paymentIntentId)).status).toBe(PaymentStatus.REFUNDED);
+  });
+
+  it('webhook duplicado "failed": segunda chamada é ignorada e não publica PaymentFailed de novo', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const bus = fakeEventBus(calls);
+    const useCase = new ConfirmPaymentUseCase(fakeIntentRepo(calls, [intent]), bus);
+    const input = webhook({ paymentIntentId: intent.paymentIntentId, gatewayStatus: 'failed' });
+    await useCase.execute(input);
+
+    await expect(useCase.execute(input)).resolves.toBeUndefined();
+
+    expect(bus.types()).toEqual(['PaymentFailed']);
+  });
+
+  it('resultado CONTRADITÓRIO continua sendo conflito: "failed" depois de CONFIRMED lança 409', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const bus = fakeEventBus(calls);
+    const useCase = new ConfirmPaymentUseCase(fakeIntentRepo(calls, [intent]), bus);
+    await useCase.execute(webhook({ paymentIntentId: intent.paymentIntentId }));
+
+    await expect(useCase.execute(webhook({ paymentIntentId: intent.paymentIntentId, gatewayStatus: 'failed' })))
+      .rejects.toMatchObject({ httpStatus: 409 });
+  });
+
+  it('gatewayStatus desconhecido: lança ValidationError e não altera o pagamento', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const bus = fakeEventBus(calls);
+
+    await expect(
+      new ConfirmPaymentUseCase(fakeIntentRepo(calls, [intent]), bus)
+        .execute(webhook({ paymentIntentId: intent.paymentIntentId, gatewayStatus: 'paid' })),
+    ).rejects.toMatchObject({ httpStatus: 400 });
+
+    expect(intent.status).toBe(PaymentStatus.PENDING);
+    expect(calls).toEqual([]);
   });
 
   it('salva o agregado ANTES de publicar eventos', async () => {
@@ -149,13 +205,47 @@ describe('ConfirmPaymentUseCase', () => {
     expect(calls).toEqual(['save', 'publish:PaymentConfirmed', 'publish:CreditsPurchased']);
   });
 
-  // DECISÃO DE DOMÍNIO: qualquer status diferente de "succeeded" (inclusive
-  // "pending") cai no ramo else e marca o pagamento como FAILED. Um webhook
-  // "pending" deveria manter o PaymentIntent PENDING.
-  it.todo('gatewayStatus "pending" mantém o PaymentIntent PENDING (não falha)');
-  // Gateways reenviam webhooks. Lançar erro no duplicado pode gerar retries
-  // infinitos; o comum é responder OK e ignorar.
-  it.todo('webhook duplicado é idempotente (ignora em vez de lançar erro)');
+  // DECISÃO (out/2026): "pending" não muda nada. Pix/boleto são pendentes por
+  // natureza; o resultado final chega em outro webhook.
+  it('gatewayStatus "pending": mantém PENDING, não salva e não publica', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const bus = fakeEventBus(calls);
+
+    await new ConfirmPaymentUseCase(fakeIntentRepo(calls, [intent]), bus)
+      .execute(webhook({ paymentIntentId: intent.paymentIntentId, gatewayStatus: 'pending' }));
+
+    expect(intent.status).toBe(PaymentStatus.PENDING);
+    expect(calls).toEqual([]);
+  });
+
+  it('"pending" atrasado (chega depois de CONFIRMED) é ignorado', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const repo = fakeIntentRepo(calls, [intent]);
+    const bus = fakeEventBus(calls);
+    const useCase = new ConfirmPaymentUseCase(repo, bus);
+    await useCase.execute(webhook({ paymentIntentId: intent.paymentIntentId }));
+
+    await useCase.execute(webhook({ paymentIntentId: intent.paymentIntentId, gatewayStatus: 'pending' }));
+
+    expect((await repo.findById(intent.paymentIntentId)).status).toBe(PaymentStatus.CONFIRMED);
+    expect(bus.types()).toEqual(['PaymentConfirmed', 'CreditsPurchased']);
+  });
+
+  it('"pending" e depois "succeeded": o pagamento é confirmado normalmente', async () => {
+    const calls = makeCalls();
+    const intent = pendingIntent('STARTER');
+    const repo = fakeIntentRepo(calls, [intent]);
+    const bus = fakeEventBus(calls);
+    const useCase = new ConfirmPaymentUseCase(repo, bus);
+
+    await useCase.execute(webhook({ paymentIntentId: intent.paymentIntentId, gatewayStatus: 'pending' }));
+    await useCase.execute(webhook({ paymentIntentId: intent.paymentIntentId }));
+
+    expect((await repo.findById(intent.paymentIntentId)).status).toBe(PaymentStatus.CONFIRMED);
+    expect(bus.types()).toEqual(['PaymentConfirmed', 'CreditsPurchased']);
+  });
 });
 
 // ─────────────────────────────────────────────

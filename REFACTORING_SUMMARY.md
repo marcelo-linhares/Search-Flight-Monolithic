@@ -130,14 +130,14 @@ node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across the rea
 
 ## Known gaps
 
-- **No persistence yet:** repositories are in memory. Auth is temporary (`x-user-id` header, no Identity context) and the payment webhook does not verify the gateway signature. Pricing and Notification are not implemented. Open domain questions are kept as `it.todo` in the tests (for example `NaN` accepted by `PaymentAmountVO`, a `pending` webhook marking a payment as failed, refunds larger than the balance being clamped to zero, debits not idempotent).
+- **No persistence yet:** repositories are in memory. Auth is temporary (`x-user-id` header, no Identity context) and the payment webhook does not verify the gateway signature. Pricing and Notification are not implemented. Smaller open questions are kept as `it.todo` in the tests. Known limitation: a refund larger than the balance is rejected by the Ledger (409), but Billing has already marked the payment REFUNDED; fixing it needs a two-step refund (Billing requests, Ledger accepts, Billing marks REFUNDED).
 - **Push notifications** run only in mock mode inside Expo Go; real push requires a development build (see `apps/mobile/README.md`).
 
 ---
 
 ## Next steps
 
-1. Decide the open domain questions listed in the `it.todo` items and turn them into tests.
+1. Make the refund two-step (see known gaps) and decide the remaining `it.todo` items.
 2. Add database repositories behind the same `findBy...` / `save` methods, a real Identity context (auth) and webhook signature verification.
 3. Implement the remaining contexts: Pricing, then Notification.
 4. Point the mobile app to the real API with `EXPO_PUBLIC_API_URL` and keep `packages/domain-events` as the contract (add contract tests).
@@ -191,3 +191,7 @@ Unit tests were added for `CreditLedger`, the value objects, the handlers and `P
 ### October 2026: search-orchestrator and REST API
 
 Watch Management, Scheduler, Search and Integration (a deterministic fake flight provider behind the `FlightPort` contract) were added test-first, plus an Express 5 REST API (`src/http`) and `src/server.js` (HTTP listener plus a scheduler timer). Errors share one hierarchy in `src/shared/errors.js` (`DomainError` subclasses with `httpStatus` and `code`); Billing and Ledger errors were moved onto it. The event flow became Ledger → Watch Management → Scheduler, `jobId` is the idempotency key between Scheduler and Search, and the P0 flow has an integration test with a fake clock and a rewritten example that uses the real contexts. The `Dockerfile` now starts the server (`npm start`). Coverage is about 98% of statements.
+
+### October 2026: open domain decisions
+
+Seven decisions were taken and implemented test-first. Billing: a `pending` webhook changes nothing (the payment stays PENDING); a repeated webhook is ignored with the same 204 answer (a contradictory one, such as `failed` after `succeeded`, is still a 409); `GatewayResultVO` rejects any status other than `succeeded`, `failed` or `pending`. Ledger: a refund larger than the balance is rejected with 409 and nothing changes; a search debit is keyed by `snapshotId` (a redelivered event is not charged twice, a new snapshot of the same watch is); `CreditBalanceVO` accepts only positive integer amounts and `debit` spends the effective balance (available minus reserved); `REFUND` is a debit in `EntryTypeVO`. Ledger history entries for searches now carry the `snapshotId` as `referenceId`.

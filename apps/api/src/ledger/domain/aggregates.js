@@ -3,6 +3,7 @@
 const { randomUUID } = require('crypto');
 const { EntryTypeVO, CreditBalanceVO } = require('./value-objects');
 const Events = require('./events');
+const { ValidationError, ConflictError } = require('../../shared/errors');
 
 // ═══════════════════════════════════════════════
 //  LEDGER CONTEXT
@@ -104,7 +105,12 @@ class CreditLedger {
 
   // Called when PriceSnapshotCaptured event arrives from Search.
   // Returns false if balance was already zero (caller should not have let the search run).
+  // Idempotent per snapshot: a redelivered PriceSnapshotCaptured is not charged
+  // twice, while a new snapshot of the same watch is.
   debitForSearch({ watchRequestId, snapshotId, creditsPerSearch = 1 }) {
+    if (!snapshotId) throw new ValidationError('CreditLedger: snapshotId required to debit a search');
+    if (this.hasEntry('SEARCH_DEBIT', snapshotId)) return false;
+
     const balance = this.computeBalance();
     if (balance.isExhausted()) {
       return false; // guard — Scheduler should have stopped this
@@ -113,7 +119,7 @@ class CreditLedger {
     this._appendEntry(new LedgerEntry({
       type:        'SEARCH_DEBIT',
       amount:      -creditsPerSearch,
-      referenceId: watchRequestId,
+      referenceId: snapshotId,
       description: `Search run for watch ${watchRequestId}`,
     }));
 
@@ -141,6 +147,13 @@ class CreditLedger {
   // Idempotent like creditFromPurchase: a refund is applied once per payment.
   creditFromRefund({ credits, paymentIntentId }) {
     if (this.hasEntry('REFUND', paymentIntentId)) return false;
+
+    // Credits already spent on searches cannot be taken back.
+    if (credits > this.computeBalance().available) {
+      throw new ConflictError(
+        `CreditLedger: refund of ${credits} credits exceeds the balance of ${this.computeBalance().available}`,
+      );
+    }
 
     this._appendEntry(new LedgerEntry({
       type:        'REFUND',
