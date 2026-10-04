@@ -83,7 +83,11 @@ Each backend context has its own folders, events and value objects and talks to 
 | `PaymentConfirmed` | PaymentIntent | Ledger |
 | `CreditsPurchased` | PaymentIntent | Ledger credits the balance (`OnCreditsPurchased`) |
 | `PaymentFailed` | PaymentIntent | Notification |
-| `CreditsRefunded` | PaymentIntent | Ledger debits the refunded credits (`OnCreditsRefunded`) |
+| `RefundRequested` | PaymentIntent | Ledger takes the credits back if they are still there (`OnRefundRequested`) |
+| `RefundAccepted` | CreditLedger | Billing completes the refund (`OnRefundAccepted`) |
+| `RefundRejected` | CreditLedger (also when the user has no ledger) | Billing puts the payment back to CONFIRMED (`OnRefundRejected`) |
+| `CreditsRefunded` | PaymentIntent (after `RefundAccepted`) | Notification |
+| `RefundFailed` | PaymentIntent (after `RefundRejected`) | Notification / admin |
 | `SearchCreditDebited` | CreditLedger | Audit log |
 | `BalanceExhausted` | CreditLedger | Scheduler pauses the user's watches |
 | `BalanceRestored` | CreditLedger (only when the ledger was exhausted) | Scheduler resumes the user's watches |
@@ -130,14 +134,14 @@ node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across the rea
 
 ## Known gaps
 
-- **No persistence yet:** repositories are in memory. Auth is temporary (`x-user-id` header, no Identity context) and the payment webhook does not verify the gateway signature. Pricing and Notification are not implemented. Smaller open questions are kept as `it.todo` in the tests. Known limitation: a refund larger than the balance is rejected by the Ledger (409), but Billing has already marked the payment REFUNDED; fixing it needs a two-step refund (Billing requests, Ledger accepts, Billing marks REFUNDED).
+- **No persistence yet:** repositories are in memory. Auth is temporary (`x-user-id` header, no Identity context) and the payment webhook does not verify the gateway signature. Pricing and Notification are not implemented. Smaller open questions are kept as `it.todo` in the tests.
 - **Push notifications** run only in mock mode inside Expo Go; real push requires a development build (see `apps/mobile/README.md`).
 
 ---
 
 ## Next steps
 
-1. Make the refund two-step (see known gaps) and decide the remaining `it.todo` items.
+1. Decide the remaining `it.todo` items.
 2. Add database repositories behind the same `findBy...` / `save` methods, a real Identity context (auth) and webhook signature verification.
 3. Implement the remaining contexts: Pricing, then Notification.
 4. Point the mobile app to the real API with `EXPO_PUBLIC_API_URL` and keep `packages/domain-events` as the contract (add contract tests).
@@ -195,3 +199,7 @@ Watch Management, Scheduler, Search and Integration (a deterministic fake flight
 ### October 2026: open domain decisions
 
 Seven decisions were taken and implemented test-first. Billing: a `pending` webhook changes nothing (the payment stays PENDING); a repeated webhook is ignored with the same 204 answer (a contradictory one, such as `failed` after `succeeded`, is still a 409); `GatewayResultVO` rejects any status other than `succeeded`, `failed` or `pending`. Ledger: a refund larger than the balance is rejected with 409 and nothing changes; a search debit is keyed by `snapshotId` (a redelivered event is not charged twice, a new snapshot of the same watch is); `CreditBalanceVO` accepts only positive integer amounts and `debit` spends the effective balance (available minus reserved); `REFUND` is a debit in `EntryTypeVO`. Ledger history entries for searches now carry the `snapshotId` as `referenceId`.
+
+### October 2026: two-step refund
+
+A refund now takes three steps, because Billing cannot know whether the user still has the credits. `RefundPaymentUseCase` calls `PaymentIntent.requestRefund()` (CONFIRMED to REFUND_REQUESTED, event `RefundRequested`). The Ledger decides in `processRefundRequest`: if the balance covers the refund it removes the credits and publishes `RefundAccepted`; if not (or if the user has no ledger) it publishes `RefundRejected` with a reason (`insufficient_balance` or `ledger_not_found`), as a business outcome and not an exception. Billing's `OnRefundAccepted` completes the refund (REFUNDED, event `CreditsRefunded`) and `OnRefundRejected` puts the payment back to CONFIRMED (event `RefundFailed`); a rejected refund can be requested again later. All answers are idempotent, and a repeated request makes the Ledger re-send `RefundAccepted` so Billing can recover from a lost answer. This closes the earlier gap where a rejected refund left the payment marked REFUNDED. The use case returns the final status because the in-process bus runs the handlers before `publish()` returns. `PaymentStatus` gained `REFUND_REQUESTED`; the Ledger no longer subscribes to `CreditsRefunded` and Billing now subscribes to the Ledger's two answers.

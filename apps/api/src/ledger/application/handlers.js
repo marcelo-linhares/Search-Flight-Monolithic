@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────
 
 const { CreditLedger } = require('../domain/aggregates');
+const Events = require('../domain/events');
 
 async function saveAndPublish(ledger, ledgerRepo, eventBus) {
   await ledgerRepo.save(ledger);
@@ -91,10 +92,13 @@ class OnPriceSnapshotCaptured {
   }
 }
 
-// ── OnCreditsRefunded ─────────────────────────
-// Billing emits this → Ledger removes the refunded credits.
+// ── OnRefundRequested ─────────────────────────
+// Billing asks for a refund → Ledger takes the credits back if they are still
+// there and answers with RefundAccepted or RefundRejected (the aggregate decides).
+// Without a ledger there is nothing to take back: the Billing must still get an
+// answer, or the payment would stay in REFUND_REQUESTED forever.
 
-class OnCreditsRefunded {
+class OnRefundRequested {
   constructor(ledgerRepo, eventBus) {
     this.ledgerRepo = ledgerRepo;
     this.eventBus   = eventBus;
@@ -102,9 +106,18 @@ class OnCreditsRefunded {
 
   async handle(event) {
     const ledger = await this.ledgerRepo.findByUserId(event.userId);
-    if (!ledger) return;
+    if (!ledger) {
+      await this.eventBus.publish(Events.RefundRejected({
+        userId:          event.userId,
+        paymentIntentId: event.paymentIntentId,
+        credits:         event.credits,
+        reason:          'ledger_not_found',
+        available:       0,
+      }));
+      return;
+    }
 
-    ledger.creditFromRefund({
+    ledger.processRefundRequest({
       credits:         event.credits,
       paymentIntentId: event.paymentIntentId,
     });
@@ -117,5 +130,5 @@ module.exports = {
   OnUserRegistered,
   OnCreditsPurchased,
   OnPriceSnapshotCaptured,
-  OnCreditsRefunded,
+  OnRefundRequested,
 };

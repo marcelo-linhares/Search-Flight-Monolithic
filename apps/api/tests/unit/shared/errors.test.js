@@ -46,6 +46,6 @@ describe('erros de Billing e Ledger usam a hierarquia compartilhada', () => {
   it('transição inválida de PaymentIntent é ConflictError (409)', () => {
     const intent = PaymentIntent.initiate({ userId: 'u-1', packId: 'STARTER' });
 
-    expect(() => intent.refund()).toThrow(ConflictError);
+    expect(() => intent.requestRefund()).toThrow(ConflictError);
   });
 });

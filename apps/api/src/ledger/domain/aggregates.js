@@ -3,7 +3,7 @@
 const { randomUUID } = require('crypto');
 const { EntryTypeVO, CreditBalanceVO } = require('./value-objects');
 const Events = require('./events');
-const { ValidationError, ConflictError } = require('../../shared/errors');
+const { ValidationError } = require('../../shared/errors');
 
 // ═══════════════════════════════════════════════
 //  LEDGER CONTEXT
@@ -143,16 +143,26 @@ class CreditLedger {
     return true;
   }
 
-  // Called when CreditsRefunded event arrives from Billing.
-  // Idempotent like creditFromPurchase: a refund is applied once per payment.
-  creditFromRefund({ credits, paymentIntentId }) {
-    if (this.hasEntry('REFUND', paymentIntentId)) return false;
+  // Called when RefundRequested arrives from Billing (step 2 of the two-step refund).
+  // The Ledger decides: true = accepted (RefundAccepted), false = rejected (RefundRejected).
+  // Credits already spent on searches cannot be taken back, so a refund larger than
+  // the balance is rejected as a business outcome (an event, not an exception).
+  // Idempotent per payment: a repeated request adds no entry but re-sends RefundAccepted,
+  // because Billing may have missed the first answer.
+  processRefundRequest({ credits, paymentIntentId }) {
+    if (this.hasEntry('REFUND', paymentIntentId)) {
+      this.#record(Events.RefundAccepted({
+        userId: this.userId, paymentIntentId, credits, creditsRemaining: this.computeBalance().available,
+      }));
+      return true;
+    }
 
-    // Credits already spent on searches cannot be taken back.
-    if (credits > this.computeBalance().available) {
-      throw new ConflictError(
-        `CreditLedger: refund of ${credits} credits exceeds the balance of ${this.computeBalance().available}`,
-      );
+    const available = this.computeBalance().available;
+    if (credits > available) {
+      this.#record(Events.RefundRejected({
+        userId: this.userId, paymentIntentId, credits, reason: 'insufficient_balance', available,
+      }));
+      return false;
     }
 
     this._appendEntry(new LedgerEntry({
@@ -163,6 +173,10 @@ class CreditLedger {
     }));
 
     const newBalance = this.computeBalance();
+    this.#record(Events.RefundAccepted({
+      userId: this.userId, paymentIntentId, credits, creditsRemaining: newBalance.available,
+    }));
+
     if (newBalance.isExhausted() && this.status !== LedgerStatus.SUSPENDED) {
       this.status = LedgerStatus.SUSPENDED;
       this.#record(Events.BalanceExhausted({

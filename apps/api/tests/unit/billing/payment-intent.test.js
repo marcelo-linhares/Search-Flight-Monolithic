@@ -66,19 +66,110 @@ describe('PaymentIntent (regras adicionais)', () => {
     expect(() => intent.fail(nope(), 'x')).toThrow('cannot fail from status "CONFIRMED"');
   });
 
-  it('refund a partir de CONFIRMED muda para REFUNDED e emite CreditsRefunded com os créditos do pacote', () => {
+  // ── Estorno em duas etapas (out/2026) ──
+  //  Billing pede (REFUND_REQUESTED) -> Ledger aceita ou rejeita -> Billing conclui
+  //  (REFUNDED) ou volta para CONFIRMED. Billing nunca marca REFUNDED sozinho.
+  const confirmado = () => {
     const intent = novo();
     intent.confirm(ok());
     intent.pullDomainEvents();
+    return intent;
+  };
+  const solicitado = () => {
+    const intent = confirmado();
+    intent.requestRefund();
+    intent.pullDomainEvents();
+    return intent;
+  };
 
-    intent.refund();
+  describe('requestRefund()', () => {
+    it('a partir de CONFIRMED muda para REFUND_REQUESTED e emite RefundRequested com os créditos do pacote', () => {
+      const intent = confirmado();
 
-    expect(intent.status).toBe(PaymentStatus.REFUNDED);
-    expect(intent.pullDomainEvents().map((e) => [e.type, e.credits])).toEqual([['CreditsRefunded', 50]]);
+      intent.requestRefund();
+
+      expect(intent.status).toBe(PaymentStatus.REFUND_REQUESTED);
+      expect(intent.pullDomainEvents()).toMatchObject([
+        { type: 'RefundRequested', userId: 'u-1', paymentIntentId: intent.paymentIntentId, credits: 50 },
+      ]);
+    });
+
+    it.each(['PENDING', 'REFUND_REQUESTED', 'REFUNDED'])('não é permitido a partir de %s (ConflictError)', (status) => {
+      const intent = novo();
+      intent.status = status;
+
+      expect(() => intent.requestRefund()).toThrow(/cannot request a refund from status/);
+    });
   });
 
-  it('refund só é permitido a partir de CONFIRMED', () => {
-    expect(() => novo().refund()).toThrow('cannot refund from status "PENDING"');
+  describe('completeRefund()', () => {
+    it('a partir de REFUND_REQUESTED muda para REFUNDED e emite CreditsRefunded', () => {
+      const intent = solicitado();
+
+      expect(intent.completeRefund()).toBe(true);
+
+      expect(intent.status).toBe(PaymentStatus.REFUNDED);
+      expect(intent.pullDomainEvents().map((e) => [e.type, e.credits])).toEqual([['CreditsRefunded', 50]]);
+    });
+
+    it('repetido (já REFUNDED): devolve false e não emite nada', () => {
+      const intent = solicitado();
+      intent.completeRefund();
+      intent.pullDomainEvents();
+
+      expect(intent.completeRefund()).toBe(false);
+      expect(intent.pullDomainEvents()).toEqual([]);
+    });
+
+    it('sem pedido de estorno (CONFIRMED): ConflictError', () => {
+      expect(() => confirmado().completeRefund()).toThrow(/cannot complete a refund from status "CONFIRMED"/);
+    });
+  });
+
+  describe('rejectRefund()', () => {
+    it('a partir de REFUND_REQUESTED volta para CONFIRMED e emite RefundFailed com o motivo', () => {
+      const intent = solicitado();
+
+      expect(intent.rejectRefund('insufficient_balance')).toBe(true);
+
+      expect(intent.status).toBe(PaymentStatus.CONFIRMED);
+      expect(intent.pullDomainEvents()).toMatchObject([
+        { type: 'RefundFailed', userId: 'u-1', reason: 'insufficient_balance' },
+      ]);
+    });
+
+    it('repetido (já CONFIRMED): devolve false e não emite nada', () => {
+      const intent = confirmado();
+
+      expect(intent.rejectRefund('insufficient_balance')).toBe(false);
+      expect(intent.pullDomainEvents()).toEqual([]);
+    });
+
+    it('depois de REFUNDED: ConflictError (o estorno já foi concluído)', () => {
+      const intent = solicitado();
+      intent.completeRefund();
+
+      expect(() => intent.rejectRefund('x')).toThrow(/cannot reject a refund from status "REFUNDED"/);
+    });
+  });
+
+  it('um estorno rejeitado pode ser pedido de novo (saldo pode ter subido)', () => {
+    const intent = solicitado();
+    intent.rejectRefund('insufficient_balance');
+    intent.pullDomainEvents();
+
+    intent.requestRefund();
+
+    expect(intent.status).toBe(PaymentStatus.REFUND_REQUESTED);
+  });
+
+  it('hasSettledWith: "succeeded" já está aplicado em CONFIRMED, REFUND_REQUESTED e REFUNDED', () => {
+    [PaymentStatus.CONFIRMED, PaymentStatus.REFUND_REQUESTED, PaymentStatus.REFUNDED].forEach((status) => {
+      const intent = novo();
+      intent.status = status;
+
+      expect(intent.hasSettledWith(ok())).toBe(true);
+    });
   });
 
   it('pullDomainEvents esvazia a fila', () => {
