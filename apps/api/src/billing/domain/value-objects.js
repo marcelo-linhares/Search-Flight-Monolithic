@@ -67,11 +67,16 @@ class PaymentAmountVO {
 // Immutable record of what the payment gateway returned.
 // Billing speaks gateway language here — translation happens in the adapter.
 
+const GATEWAY_STATUSES = ['succeeded', 'failed', 'pending'];
+
 class GatewayResultVO {
   constructor({ gatewayTransactionId, status, rawResponse = null }) {
     if (!gatewayTransactionId) throw new ValidationError('GatewayResultVO: gatewayTransactionId required');
+    if (!GATEWAY_STATUSES.includes(status)) {
+      throw new ValidationError(`GatewayResultVO: status must be one of ${GATEWAY_STATUSES.join(', ')}`);
+    }
     this.gatewayTransactionId = gatewayTransactionId;
-    this.status               = status;   // 'succeeded' | 'failed' | 'pending'
+    this.status               = status;
     this.rawResponse          = rawResponse;
     Object.freeze(this);
   }

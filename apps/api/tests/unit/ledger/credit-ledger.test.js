@@ -138,6 +138,22 @@ describe('CreditLedger', () => {
       expect(ledger.status).toBe(LedgerStatus.SUSPENDED);
       expect(typesOf(ledger.pullDomainEvents())).toEqual(['BalanceExhausted']);
     });
+
+    // DECISÃO (out/2026): não se estorna o que já foi gasto. O ledger rejeita
+    // com 409 e nada muda; um admin decide o que fazer.
+    it('estorno maior que o saldo: lança ConflictError, sem lançamento e sem eventos', () => {
+      const ledger = ledgerWithCredits(10);
+
+      let erro;
+      try { ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' }); } catch (e) { erro = e; }
+
+      expect(erro).toMatchObject({ httpStatus: 409 });
+      expect(erro.message).toMatch(/refund.*exceeds/i);
+
+      expect(ledger.computeBalance().available).toBe(10);
+      expect(ledger.entries).toHaveLength(1);
+      expect(ledger.pullDomainEvents()).toEqual([]);
+    });
   });
 
   describe('pullDomainEvents()', () => {
@@ -155,7 +171,6 @@ describe('CreditLedger', () => {
     it.todo('estorno quando o ledger já está SUSPENDED não emite um segundo BalanceExhausted');
     it.todo('computeBalance soma presente + compras - débitos - estornos (cenário completo)');
     it.todo('LedgerEntry é imutável e o histórico só cresce (append-only)');
-    it.todo('DECISÃO DE DOMÍNIO: estorno maior que o saldo hoje é truncado em 0 (computeBalance usa Math.max); registrar a dívida?');
     it.todo('ledger aberto com 0 crédito já nasce ACTIVE com saldo 0: o primeiro débito devolve false');
   });
 });
@@ -201,7 +216,37 @@ describe('CreditLedger: idempotência (eventos podem ser reentregues)', () => {
     expect(ledger.computeBalance().available).toBe(5);
   });
 
-  // DOMÍNIO: débitos NÃO são idempotentes hoje (a referência do lançamento é o
-  // watchRequestId, não o snapshotId). Reentrega de PriceSnapshotCaptured debita duas vezes.
-  it.todo('debitForSearch com o mesmo snapshotId não debita duas vezes');
+  // DECISÃO (out/2026): a chave do débito é o snapshotId (um débito por snapshot).
+  it('debitForSearch grava o snapshotId como referência do lançamento', () => {
+    const ledger = ledgerWithCredits(5);
+
+    ledger.debitForSearch({ watchRequestId: 'w-1', snapshotId: 's-1' });
+
+    expect(ledger.entries.at(-1)).toMatchObject({ referenceId: 's-1', amount: -1 });
+  });
+
+  it('debitForSearch com o mesmo snapshotId não debita duas vezes e retorna false', () => {
+    const ledger = ledgerWithCredits(5);
+    const busca = { watchRequestId: 'w-1', snapshotId: 's-1' };
+
+    expect(ledger.debitForSearch(busca)).toBe(true);
+    ledger.pullDomainEvents();
+    expect(ledger.debitForSearch(busca)).toBe(false);
+
+    expect(ledger.computeBalance().available).toBe(4);
+    expect(ledger.pullDomainEvents()).toEqual([]);
+  });
+
+  it('snapshots DIFERENTES do mesmo watch são cobrados cada um', () => {
+    const ledger = ledgerWithCredits(5);
+
+    ledger.debitForSearch({ watchRequestId: 'w-1', snapshotId: 's-1' });
+    ledger.debitForSearch({ watchRequestId: 'w-1', snapshotId: 's-2' });
+
+    expect(ledger.computeBalance().available).toBe(3);
+  });
+
+  it('debitForSearch sem snapshotId lança ValidationError (sem chave de idempotência)', () => {
+    expect(() => ledgerWithCredits(5).debitForSearch({ watchRequestId: 'w-1' })).toThrow(/snapshotId required/);
+  });
 });

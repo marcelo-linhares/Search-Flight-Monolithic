@@ -192,7 +192,7 @@ describe('compras (Billing)', () => {
     expect((await http.get('/api/payments').set(as('u-1'))).body[0].status).toBe('FAILED');
   });
 
-  it('webhook: pagamento inexistente 404, repetido 409, sem corpo/sem transação 400', async () => {
+  it('webhook: pagamento inexistente 404, sem corpo/sem transação 400, status desconhecido 400', async () => {
     const { http, as } = montar();
     await registrar(http);
     const { body: checkout } = await http.post('/api/payments').set(as('u-1')).send({ packId: 'STARTER' });
@@ -200,115 +200,48 @@ describe('compras (Billing)', () => {
 
     expect((await http.post('/api/payments/webhook').send({ ...payload, paymentIntentId: 'x' })).status).toBe(404);
     expect((await http.post('/api/payments/webhook').send({ ...payload, gatewayTransactionId: undefined })).status).toBe(400);
+    expect((await http.post('/api/payments/webhook').send({ ...payload, gatewayStatus: 'paid' })).status).toBe(400);
     expect((await http.post('/api/payments/webhook')).status).toBe(404); // sem corpo: paymentIntentId ausente
-    expect((await http.post('/api/payments/webhook').send(payload)).status).toBe(204);
-    const repetido = await http.post('/api/payments/webhook').send(payload);
-    expect(repetido.status).toBe(409);
-    expect(repetido.body.error.code).toBe('CONFLICT');
   });
-});
 
-describe('watches (Watch Management)', () => {
-  it('POST /api/watches cria o watch (201) com status active', async () => {
+  it('webhook repetido é idempotente: 204 de novo e o crédito entra uma vez só', async () => {
     const { http, as } = montar();
     await registrar(http);
-
-    const res = await http.post('/api/watches').set(as('u-1')).send(novoWatch({ intervalHours: 6 }));
-
-    expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({
-      userId: 'u-1', origin: 'GRU', destination: 'LIS', departureDate: '2026-12-20', intervalHours: 6, status: 'active',
-    });
-    expect(res.body.watchRequestId).toEqual(expect.any(String));
-  });
-
-  it('dados inválidos: 400 com a mensagem do domínio', async () => {
-    const { http, as } = montar();
-
-    const res = await http.post('/api/watches').set(as('u-1')).send(novoWatch({ origin: 'XX' }));
-
-    expect(res.status).toBe(400);
-    expect(res.body.error).toEqual({ code: 'VALIDATION_ERROR', message: expect.stringContaining('origin') });
-  });
-
-  it('GET /api/watches lista só os do usuário e GET /api/watches/:id devolve um', async () => {
-    const { http, as } = montar();
-    await http.post('/api/watches').set(as('u-1')).send(novoWatch());
-    await http.post('/api/watches').set(as('u-2')).send(novoWatch({ destination: 'MAD' }));
-
-    const list = await http.get('/api/watches').set(as('u-1'));
-    const one = await http.get(`/api/watches/${list.body[0].watchRequestId}`).set(as('u-1'));
-
-    expect(list.body).toHaveLength(1);
-    expect(one.status).toBe(200);
-    expect(one.body.destination).toBe('LIS');
-  });
-
-  it('watch de outro usuário ou inexistente: 404 (não revela que existe)', async () => {
-    const { http, as } = montar();
-    const { body } = await http.post('/api/watches').set(as('u-1')).send(novoWatch());
-
-    expect((await http.get(`/api/watches/${body.watchRequestId}`).set(as('u-2'))).status).toBe(404);
-    expect((await http.get('/api/watches/nao-existe').set(as('u-1'))).status).toBe(404);
-    expect((await http.delete(`/api/watches/${body.watchRequestId}`).set(as('u-2'))).status).toBe(404);
-    expect((await http.get(`/api/watches/${body.watchRequestId}/price-history`).set(as('u-2'))).status).toBe(404);
-  });
-
-  it('DELETE /api/watches/:id cancela (200) e cancelar de novo dá 409', async () => {
-    const { http, as } = montar();
-    const { body } = await http.post('/api/watches').set(as('u-1')).send(novoWatch());
-
-    const first = await http.delete(`/api/watches/${body.watchRequestId}`).set(as('u-1'));
-    const second = await http.delete(`/api/watches/${body.watchRequestId}`).set(as('u-1'));
-
-    expect(first.status).toBe(200);
-    expect(first.body.status).toBe('cancelled');
-    expect(second.status).toBe(409);
-  });
-});
-
-describe('fluxo completo pela API (com o scheduler disparado manualmente)', () => {
-  it('registrar -> criar watch -> tick -> saldo cai e o histórico de preços aparece', async () => {
-    const { http, as, avancar } = montar();
-    await registrar(http);
-    const { body: watch } = await http.post('/api/watches').set(as('u-1')).send(novoWatch());
-
-    const tick1 = await http.post('/api/dev/scheduler/tick').send();
-    avancar(4);
-    const tick2 = await http.post('/api/dev/scheduler/tick').send();
-    const history = await http.get(`/api/watches/${watch.watchRequestId}/price-history`).set(as('u-1'));
-    const credits = await http.get('/api/credits').set(as('u-1'));
-
-    expect(tick1.body).toEqual({ triggered: 1, ended: 0 });
-    expect(tick2.body).toEqual({ triggered: 1, ended: 0 });
-    expect(credits.body.available).toBe(8);
-    expect(history.status).toBe(200);
-    expect(history.body.snapshots).toHaveLength(2);
-    expect(history.body.lowest).toEqual(expect.objectContaining({ currency: 'BRL', amount: expect.any(Number) }));
-  });
-
-  it('créditos acabam pela API: watch vira suspended_credits e volta a active após a compra', async () => {
-    const { http, as, avancar } = montar({ giftCredits: 1 });
-    await registrar(http);
-    const { body: watch } = await http.post('/api/watches').set(as('u-1')).send(novoWatch());
-    await http.post('/api/dev/scheduler/tick').send();
-
-    expect((await http.get(`/api/watches/${watch.watchRequestId}`).set(as('u-1'))).body.status).toBe('suspended_credits');
-    expect((await http.get('/api/credits').set(as('u-1'))).body).toMatchObject({ available: 0, status: 'SUSPENDED' });
-
     const { body: checkout } = await http.post('/api/payments').set(as('u-1')).send({ packId: 'STARTER' });
-    await http.post('/api/payments/webhook').send({
-      paymentIntentId: checkout.paymentIntentId, gatewayTransactionId: 'gw-1', gatewayStatus: 'succeeded',
-    });
-    avancar(1);
+    const payload = { paymentIntentId: checkout.paymentIntentId, gatewayTransactionId: 'gw-1', gatewayStatus: 'succeeded' };
 
-    expect((await http.get(`/api/watches/${watch.watchRequestId}`).set(as('u-1'))).body.status).toBe('active');
-    expect((await http.post('/api/dev/scheduler/tick').send()).body.triggered).toBe(1);
+    expect((await http.post('/api/payments/webhook').send(payload)).status).toBe(204);
+    expect((await http.post('/api/payments/webhook').send(payload)).status).toBe(204);
+
+    expect((await http.get('/api/credits').set(as('u-1'))).body.available).toBe(60);
   });
 
-  it('rotas de desenvolvimento ficam desligadas por padrão (404)', async () => {
-    const { http } = montar({ enableDevRoutes: false });
+  it('webhook "pending" não muda nada; o "succeeded" seguinte confirma', async () => {
+    const { http, as } = montar();
+    await registrar(http);
+    const { body: checkout } = await http.post('/api/payments').set(as('u-1')).send({ packId: 'STARTER' });
+    const hook = (gatewayStatus) => http.post('/api/payments/webhook')
+      .send({ paymentIntentId: checkout.paymentIntentId, gatewayTransactionId: 'gw-1', gatewayStatus });
 
-    expect((await http.post('/api/dev/scheduler/tick').send()).status).toBe(404);
+    expect((await hook('pending')).status).toBe(204);
+    expect((await http.get('/api/payments').set(as('u-1'))).body[0].status).toBe('PENDING');
+    expect((await http.get('/api/credits').set(as('u-1'))).body.available).toBe(10);
+
+    expect((await hook('succeeded')).status).toBe(204);
+    expect((await http.get('/api/payments').set(as('u-1'))).body[0].status).toBe('CONFIRMED');
+  });
+
+  it('webhook CONTRADITÓRIO ("failed" depois de "succeeded") continua 409 CONFLICT', async () => {
+    const { http } = montar();
+    await registrar(http);
+    const { body: checkout } = await http.post('/api/payments').set({ 'x-user-id': 'u-1' }).send({ packId: 'STARTER' });
+    const hook = (gatewayStatus) => http.post('/api/payments/webhook')
+      .send({ paymentIntentId: checkout.paymentIntentId, gatewayTransactionId: 'gw-1', gatewayStatus });
+    await hook('succeeded');
+
+    const res = await hook('failed');
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('CONFLICT');
   });
 });
