@@ -15,6 +15,7 @@ const PaymentStatus = Object.freeze({
   PENDING:   'PENDING',
   CONFIRMED: 'CONFIRMED',
   FAILED:    'FAILED',
+  REFUND_REQUESTED: 'REFUND_REQUESTED', // waiting for the Ledger to accept or reject
   REFUNDED:  'REFUNDED',
 });
 
@@ -48,7 +49,7 @@ class PaymentIntent {
   // 'succeeded' stays true after a refund; 'pending' never settles anything.
   hasSettledWith(gatewayResult) {
     if (gatewayResult.isSucceeded()) {
-      return [PaymentStatus.CONFIRMED, PaymentStatus.REFUNDED].includes(this.status);
+      return [PaymentStatus.CONFIRMED, PaymentStatus.REFUND_REQUESTED, PaymentStatus.REFUNDED].includes(this.status);
     }
     if (gatewayResult.isFailed()) return this.status === PaymentStatus.FAILED;
     return false;
@@ -101,10 +102,31 @@ class PaymentIntent {
     }));
   }
 
-  // Called when a confirmed payment is refunded.
-  refund() {
+  // Refund in two steps (Billing never touches credits, so it cannot know
+  // whether the user still has them):
+  //   1. requestRefund()   CONFIRMED        -> REFUND_REQUESTED  (event RefundRequested)
+  //   2. the Ledger accepts or rejects      (events RefundAccepted / RefundRejected)
+  //   3. completeRefund()  REFUND_REQUESTED -> REFUNDED          (event CreditsRefunded)
+  //      rejectRefund()    REFUND_REQUESTED -> CONFIRMED         (event RefundFailed)
+  // Steps 3 are idempotent: a redelivered answer returns false and does nothing.
+
+  requestRefund() {
     if (this.status !== PaymentStatus.CONFIRMED) {
-      throw new ConflictError(`PaymentIntent: cannot refund from status "${this.status}"`);
+      throw new ConflictError(`PaymentIntent: cannot request a refund from status "${this.status}"`);
+    }
+    this.status = PaymentStatus.REFUND_REQUESTED;
+    this.#record(Events.RefundRequested({
+      userId:          this.userId,
+      paymentIntentId: this.paymentIntentId,
+      credits:         this.pack.credits,
+      requestedAt:     new Date().toISOString(),
+    }));
+  }
+
+  completeRefund() {
+    if (this.status === PaymentStatus.REFUNDED) return false;
+    if (this.status !== PaymentStatus.REFUND_REQUESTED) {
+      throw new ConflictError(`PaymentIntent: cannot complete a refund from status "${this.status}"`);
     }
     this.status = PaymentStatus.REFUNDED;
     this.#record(Events.CreditsRefunded({
@@ -113,6 +135,21 @@ class PaymentIntent {
       credits:         this.pack.credits,
       refundedAt:      new Date().toISOString(),
     }));
+    return true;
+  }
+
+  rejectRefund(reason) {
+    if (this.status === PaymentStatus.CONFIRMED) return false;
+    if (this.status !== PaymentStatus.REFUND_REQUESTED) {
+      throw new ConflictError(`PaymentIntent: cannot reject a refund from status "${this.status}"`);
+    }
+    this.status = PaymentStatus.CONFIRMED;
+    this.#record(Events.RefundFailed({
+      userId:          this.userId,
+      paymentIntentId: this.paymentIntentId,
+      reason,
+    }));
+    return true;
   }
 
   #record(event) { this.#domainEvents.push(event); }

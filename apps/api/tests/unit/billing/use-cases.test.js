@@ -147,6 +147,9 @@ describe('ConfirmPaymentUseCase', () => {
     const input = webhook({ paymentIntentId: intent.paymentIntentId });
     await new ConfirmPaymentUseCase(repo, bus).execute(input);
     await new RefundPaymentUseCase(repo, bus).execute({ paymentIntentId: intent.paymentIntentId });
+    const refunded = await repo.findById(intent.paymentIntentId);
+    refunded.completeRefund(); // o Ledger aceitou: Billing conclui
+    await repo.save(refunded);
     const before = bus.types();
 
     await new ConfirmPaymentUseCase(repo, bus).execute(input);
@@ -293,18 +296,51 @@ describe('RefundPaymentUseCase', () => {
     return intent;
   }
 
-  it('estorna pagamento confirmado: REFUNDED e publica CreditsRefunded com os créditos do pacote', async () => {
+  // Etapa 1 do estorno: Billing só PEDE. Quem decide é o Ledger (saldo suficiente?).
+  it('pede o estorno: REFUND_REQUESTED, publica RefundRequested e devolve o status atual', async () => {
     const calls = makeCalls();
     const intent = confirmedIntent();
     const repo = fakeIntentRepo(calls, [intent]);
     const bus = fakeEventBus(calls);
 
-    await new RefundPaymentUseCase(repo, bus).execute({ paymentIntentId: intent.paymentIntentId });
+    const result = await new RefundPaymentUseCase(repo, bus).execute({ paymentIntentId: intent.paymentIntentId });
 
-    expect((await repo.findById(intent.paymentIntentId)).status).toBe(PaymentStatus.REFUNDED);
-    expect(bus.types()).toEqual(['CreditsRefunded']);
+    expect((await repo.findById(intent.paymentIntentId)).status).toBe(PaymentStatus.REFUND_REQUESTED);
+    expect(result).toEqual({ paymentIntentId: intent.paymentIntentId, status: PaymentStatus.REFUND_REQUESTED });
+    expect(bus.types()).toEqual(['RefundRequested']);
     expect(bus.published[0]).toMatchObject({ userId: 'u-1', credits: 50, paymentIntentId: intent.paymentIntentId });
-    expect(calls).toEqual(['save', 'publish:CreditsRefunded']);
+    expect(calls).toEqual(['save', 'publish:RefundRequested']);
+  });
+
+  it('o status devolvido é o que ficou DEPOIS dos handlers (aqui o Ledger aceita na hora)', async () => {
+    const calls = makeCalls();
+    const intent = confirmedIntent();
+    const repo = fakeIntentRepo(calls, [intent]);
+    const bus = fakeEventBus(calls);
+    bus.publish = async (event) => {
+      if (event.type !== 'RefundRequested') return;
+      const row = await repo.findById(event.paymentIntentId);
+      row.completeRefund();
+      await repo.save(row);
+    };
+
+    const result = await new RefundPaymentUseCase(repo, bus).execute({ paymentIntentId: intent.paymentIntentId });
+
+    expect(result.status).toBe(PaymentStatus.REFUNDED);
+  });
+
+  it('pedido de estorno já em andamento: ConflictError (não publica de novo)', async () => {
+    const calls = makeCalls();
+    const intent = confirmedIntent();
+    const repo = fakeIntentRepo(calls, [intent]);
+    const bus = fakeEventBus(calls);
+    const useCase = new RefundPaymentUseCase(repo, bus);
+    await useCase.execute({ paymentIntentId: intent.paymentIntentId });
+
+    await expect(useCase.execute({ paymentIntentId: intent.paymentIntentId }))
+      .rejects.toMatchObject({ httpStatus: 409 });
+
+    expect(bus.types()).toEqual(['RefundRequested']);
   });
 
   it('pagamento PENDING não pode ser estornado', async () => {
@@ -314,7 +350,7 @@ describe('RefundPaymentUseCase', () => {
 
     await expect(
       new RefundPaymentUseCase(fakeIntentRepo(calls, [intent]), bus).execute({ paymentIntentId: intent.paymentIntentId }),
-    ).rejects.toThrow(/cannot refund from status "PENDING"/);
+    ).rejects.toThrow(/cannot request a refund from status "PENDING"/);
 
     expect(bus.published).toEqual([]);
   });

@@ -101,14 +101,19 @@ describe('Billing + Ledger (fluxo completo por eventos)', () => {
     expect(seen).not.toContain('CreditsPurchased');
   });
 
-  it('estorno remove os créditos do pacote', async () => {
+  const paymentStatus = async () => (await app.billing.listUserPayments.execute({ userId: USER }))[0].status;
+
+  it('estorno em duas etapas: Billing pede, Ledger aceita, Billing conclui (REFUNDED)', async () => {
     await registerUser(app);
-    const paymentIntentId = await buy(app, 'STARTER');
+    const paymentIntentId = await buy(app, 'STARTER'); // 10 + 50
 
-    await app.billing.refundPayment.execute({ paymentIntentId });
+    const result = await app.billing.refundPayment.execute({ paymentIntentId });
 
+    expect(result).toEqual({ paymentIntentId, status: 'REFUNDED' });
     expect((await balance(app)).available).toBe(10);
-    expect(seen).toContain('CreditsRefunded');
+    expect(seen).toEqual(expect.arrayContaining(['RefundRequested', 'RefundAccepted', 'CreditsRefunded']));
+    expect(seen.indexOf('RefundRequested')).toBeLessThan(seen.indexOf('RefundAccepted'));
+    expect(seen.indexOf('RefundAccepted')).toBeLessThan(seen.indexOf('CreditsRefunded'));
   });
 
   it('estorno que zera o saldo suspende o ledger', async () => {
@@ -119,23 +124,44 @@ describe('Billing + Ledger (fluxo completo por eventos)', () => {
     await app.billing.refundPayment.execute({ paymentIntentId });
 
     expect(await balance(app)).toEqual({ userId: USER, available: 0, status: 'SUSPENDED' });
+    expect(await paymentStatus()).toBe('REFUNDED');
   });
 
-  // DECISÃO (out/2026): estorno maior que o saldo é rejeitado pelo Ledger (409).
-  // LIMITAÇÃO CONHECIDA: Billing já gravou o pagamento como REFUNDED antes de
-  // publicar CreditsRefunded (os contextos só conversam por eventos), então o
-  // pagamento e o ledger ficam divergentes. Corrigir exige um fluxo em duas etapas
-  // (Billing pede o estorno, Ledger aceita, Billing marca REFUNDED).
-  it('estorno maior que o saldo: o Ledger rejeita e o saldo não muda', async () => {
+  // DECISÃO (out/2026): estorno maior que o saldo é rejeitado pelo Ledger e o
+  // pagamento CONTINUA CONFIRMED (antes ficava REFUNDED com o ledger intacto).
+  it('estorno maior que o saldo: Ledger rejeita, saldo intacto e o pagamento volta a CONFIRMED', async () => {
     await registerUser(app);
     const paymentIntentId = await buy(app, 'STARTER'); // 10 + 50
     await searchRuns(app, 20);                         // gasta 20 -> saldo 40
 
-    await expect(app.billing.refundPayment.execute({ paymentIntentId }))
-      .rejects.toThrow(/handler\(s\) failed for "CreditsRefunded"/);
+    const result = await app.billing.refundPayment.execute({ paymentIntentId });
 
+    expect(result).toEqual({ paymentIntentId, status: 'CONFIRMED' });
     expect((await balance(app)).available).toBe(40);
-    expect((await app.billing.listUserPayments.execute({ userId: USER }))[0].status).toBe('REFUNDED'); // divergência conhecida
+    expect(await paymentStatus()).toBe('CONFIRMED');
+    expect(seen).toEqual(expect.arrayContaining(['RefundRequested', 'RefundRejected', 'RefundFailed']));
+    expect(seen).not.toContain('CreditsRefunded');
+  });
+
+  it('depois de rejeitado, um novo pedido com saldo suficiente é aceito', async () => {
+    await registerUser(app);
+    const paymentIntentId = await buy(app, 'STARTER');
+    await searchRuns(app, 20); // saldo 40 < 50
+    await app.billing.refundPayment.execute({ paymentIntentId });
+    await buy(app, 'EXPLORER'); // +200 -> saldo 240
+
+    const result = await app.billing.refundPayment.execute({ paymentIntentId });
+
+    expect(result.status).toBe('REFUNDED');
+    expect((await balance(app)).available).toBe(190);
+  });
+
+  it('não dá para pedir estorno duas vezes depois de REFUNDED (409)', async () => {
+    await registerUser(app);
+    const paymentIntentId = await buy(app, 'STARTER');
+    await app.billing.refundPayment.execute({ paymentIntentId });
+
+    await expect(app.billing.refundPayment.execute({ paymentIntentId })).rejects.toMatchObject({ httpStatus: 409 });
   });
 
   it('histórico do ledger registra presente, débitos e compra; Billing lista o pagamento', async () => {

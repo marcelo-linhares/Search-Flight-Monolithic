@@ -24,7 +24,20 @@ function GiftCreditsGranted({ userId, credits, reason }) {
   return makeEvent('GiftCreditsGranted', { userId, credits, reason });
 }
 
+// The Ledger took the refunded credits back. Subscriber: Billing (completes the refund).
+function RefundAccepted({ userId, paymentIntentId, credits, creditsRemaining }) {
+  return makeEvent('RefundAccepted', { userId, paymentIntentId, credits, creditsRemaining });
+}
+
+// The Ledger could not take the credits back (already spent, or no ledger).
+// Subscriber: Billing (puts the payment back to CONFIRMED).
+function RefundRejected({ userId, paymentIntentId, credits, reason, available }) {
+  return makeEvent('RefundRejected', { userId, paymentIntentId, credits, reason, available });
+}
+
 module.exports = {
+  RefundAccepted,
+  RefundRejected,
   SearchCreditDebited,
   BalanceExhausted,
   BalanceRestored,

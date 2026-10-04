@@ -120,39 +120,67 @@ describe('CreditLedger', () => {
     });
   });
 
-  describe('creditFromRefund()', () => {
-    it('remove do saldo os créditos devolvidos', () => {
+  // Estorno em duas etapas: o Ledger DECIDE. Aceita (RefundAccepted) ou rejeita
+  // (RefundRejected) o pedido do Billing; nunca lança erro por falta de saldo.
+  describe('processRefundRequest()', () => {
+    const pedido = { credits: 50, paymentIntentId: 'pi-1' };
+
+    it('saldo suficiente: remove os créditos e emite RefundAccepted', () => {
       const ledger = ledgerWithCredits(60);
 
-      ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' });
+      expect(ledger.processRefundRequest(pedido)).toBe(true);
 
       expect(ledger.computeBalance().available).toBe(10);
       expect(ledger.status).toBe(LedgerStatus.ACTIVE);
+      expect(ledger.pullDomainEvents()).toMatchObject([
+        { type: 'RefundAccepted', userId: 'u-1', paymentIntentId: 'pi-1', credits: 50, creditsRemaining: 10 },
+      ]);
     });
 
-    it('se o estorno zera o saldo: status SUSPENDED e BalanceExhausted', () => {
+    it('se o estorno zera o saldo: status SUSPENDED, RefundAccepted e BalanceExhausted', () => {
       const ledger = ledgerWithCredits(50);
 
-      ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' });
+      ledger.processRefundRequest(pedido);
 
       expect(ledger.status).toBe(LedgerStatus.SUSPENDED);
-      expect(typesOf(ledger.pullDomainEvents())).toEqual(['BalanceExhausted']);
+      expect(typesOf(ledger.pullDomainEvents())).toEqual(['RefundAccepted', 'BalanceExhausted']);
     });
 
-    // DECISÃO (out/2026): não se estorna o que já foi gasto. O ledger rejeita
-    // com 409 e nada muda; um admin decide o que fazer.
-    it('estorno maior que o saldo: lança ConflictError, sem lançamento e sem eventos', () => {
+    // DECISÃO (out/2026): não se estorna o que já foi gasto. Rejeição é um
+    // resultado de negócio (evento), não uma exceção.
+    it('saldo menor que o estorno: rejeita, não cria lançamento e emite RefundRejected', () => {
       const ledger = ledgerWithCredits(10);
 
-      let erro;
-      try { ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' }); } catch (e) { erro = e; }
-
-      expect(erro).toMatchObject({ httpStatus: 409 });
-      expect(erro.message).toMatch(/refund.*exceeds/i);
+      expect(ledger.processRefundRequest(pedido)).toBe(false);
 
       expect(ledger.computeBalance().available).toBe(10);
       expect(ledger.entries).toHaveLength(1);
-      expect(ledger.pullDomainEvents()).toEqual([]);
+      expect(ledger.pullDomainEvents()).toMatchObject([
+        { type: 'RefundRejected', userId: 'u-1', paymentIntentId: 'pi-1', credits: 50,
+          reason: 'insufficient_balance', available: 10 },
+      ]);
+    });
+
+    it('pedido repetido já aceito: sem novo lançamento, mas reemite RefundAccepted (o Billing pode ter perdido o 1º)', () => {
+      const ledger = ledgerWithCredits(80);
+      ledger.processRefundRequest(pedido);
+      ledger.pullDomainEvents();
+
+      expect(ledger.processRefundRequest(pedido)).toBe(true);
+
+      expect(ledger.computeBalance().available).toBe(30);
+      expect(ledger.entries).toHaveLength(2);
+      expect(typesOf(ledger.pullDomainEvents())).toEqual(['RefundAccepted']);
+    });
+
+    it('rejeitado antes, aceito depois: com saldo maior o novo pedido passa', () => {
+      const ledger = ledgerWithCredits(10);
+      ledger.processRefundRequest(pedido);
+      ledger.creditFromPurchase({ credits: 50, paymentIntentId: 'pi-2', packId: 'STARTER' });
+      ledger.pullDomainEvents();
+
+      expect(ledger.processRefundRequest(pedido)).toBe(true);
+      expect(ledger.computeBalance().available).toBe(10);
     });
   });
 
@@ -198,21 +226,11 @@ describe('CreditLedger: idempotência (eventos podem ser reentregues)', () => {
     expect(ledger.pullDomainEvents()).toEqual([]);
   });
 
-  it('creditFromRefund do mesmo paymentIntentId só vale uma vez', () => {
-    const ledger = ledgerWithCredits(80);
-    const estorno = { credits: 50, paymentIntentId: 'pi-1' };
-
-    expect(ledger.creditFromRefund(estorno)).toBe(true);
-    expect(ledger.creditFromRefund(estorno)).toBe(false);
-
-    expect(ledger.computeBalance().available).toBe(30);
-  });
-
   it('compra e estorno do mesmo pagamento são independentes (tipos diferentes)', () => {
     const ledger = ledgerWithCredits(5);
     ledger.creditFromPurchase({ credits: 50, paymentIntentId: 'pi-1', packId: 'STARTER' });
 
-    expect(ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' })).toBe(true);
+    expect(ledger.processRefundRequest({ credits: 50, paymentIntentId: 'pi-1' })).toBe(true);
     expect(ledger.computeBalance().available).toBe(5);
   });
 

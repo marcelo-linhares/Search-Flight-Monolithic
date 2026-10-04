@@ -56,7 +56,9 @@ Every context has its own folder, events and value objects. They never import ea
 ```
 Identity ── UserRegistered ────────────────> Ledger ── GiftCreditsGranted ──> Notification
 Billing ── CreditsPurchased ──────────────> Ledger ── BalanceRestored ──> Watch Management ── WatchReactivated ──> Scheduler
-Billing ── CreditsRefunded ───────────────> Ledger ── BalanceExhausted (if it reaches zero)
+Billing ── RefundRequested ───────────────> Ledger ── RefundAccepted ──> Billing ── CreditsRefunded ──> Notification
+                                            Ledger ── RefundRejected ──> Billing ── RefundFailed ────> Notification / admin
+                                            Ledger ── BalanceExhausted (if an accepted refund reaches zero)
 Ledger  ── BalanceExhausted ──────────────> Watch Management ── WatchSuspendedDueToCredits ──> Scheduler (pauses)
 Watch Management ── WatchCreated ─────────> Scheduler (first search runs immediately)
 Watch Management ── WatchCancelled / WatchExpired ──> Scheduler (stops the schedule)
@@ -69,7 +71,7 @@ Billing ── PaymentFailed ─────────────────
 Ledger  ── GiftCreditsGranted ────────────> Notification
 ```
 
-Watch Management is the owner of the watch lifecycle, so the Ledger's balance events go to it first and the Scheduler follows the watch events (before, the map showed Ledger → Scheduler directly). `jobId` is the idempotency key between Scheduler and Search.
+Watch Management is the owner of the watch lifecycle, so the Ledger's balance events go to it first and the Scheduler follows the watch events (before, the map showed Ledger → Scheduler directly). `jobId` is the idempotency key between Scheduler and Search. A refund is two-step: Billing only asks (`RefundRequested`) and the Ledger, the owner of the balance, accepts or rejects it, so a refund of credits already spent never marks the payment REFUNDED.
 
 Billing, Ledger, Watch Management, Scheduler, Search and Integration exist in `apps/api`. Identity is a stand-in (`POST /api/users` publishes `UserRegistered`); Pricing and Notification are not implemented yet and are still simulated by the mobile mock server (Profile > Demo controls).
 
@@ -92,7 +94,7 @@ Billing, Ledger, Watch Management, Scheduler, Search and Integration exist in `a
 ```
 
 - **Domain:** aggregates enforce invariants and record domain events (`pullDomainEvents()` hands them to the caller); value objects are immutable (frozen) and compared by value; events are frozen facts created by factories (`makeEvent`: `eventId`, `occurredAt`, `type`, payload).
-- **Application:** use cases (for example `ConfirmPaymentUseCase`) load and save aggregates through repositories and publish the events the aggregate recorded. Event handlers (`OnCreditsPurchased`, `OnPriceSnapshotCaptured`, `OnCreditsRefunded`) are thin subscribers that delegate to an aggregate.
+- **Application:** use cases (for example `ConfirmPaymentUseCase`) load and save aggregates through repositories and publish the events the aggregate recorded. Event handlers (`OnCreditsPurchased`, `OnPriceSnapshotCaptured`, `OnRefundRequested`) are thin subscribers that delegate to an aggregate.
 - **Infrastructure:** repositories (`findByUserId`, `save`), payment gateway adapters, the event bus implementation. Gateway vocabulary is translated here, so the domain never sees gateway language.
 - **Presentation:** an Express 5 app in `src/http` (routes call use cases and queries only; one error handler maps `DomainError` subclasses to HTTP status codes). It sits next to the contexts, not inside them.
 
@@ -109,7 +111,7 @@ apps/api/src/
   billing/                     PaymentIntent, CreditPack; use cases: InitiatePayment, ConfirmPayment, RefundPayment,
                                ListUserPayments, ListCreditPacks
   ledger/                      CreditLedger, LedgerEntry; handlers (UserRegistered, CreditsPurchased,
-                               PriceSnapshotCaptured, CreditsRefunded); queries (GetCreditBalance, GetLedgerHistory)
+                               PriceSnapshotCaptured, RefundRequested); queries (GetCreditBalance, GetLedgerHistory)
   watch/                       WatchRequest; use cases (CreateWatch, CancelWatch, GetWatch, ListUserWatches);
                                handlers (OnBalanceExhausted, OnBalanceRestored, OnSearchWindowEnded);
                                infrastructure: watch repository, credit-status projection fed only by events

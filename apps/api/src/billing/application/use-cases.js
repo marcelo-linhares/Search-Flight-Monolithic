@@ -5,7 +5,7 @@
 //
 //  Each use case: load aggregate -> one domain call -> save -> publish the
 //  events the aggregate recorded. Billing never touches credits: it only
-//  publishes CreditsPurchased / CreditsRefunded and the Ledger reacts.
+//  publishes CreditsPurchased / RefundRequested and the Ledger reacts.
 // ─────────────────────────────────────────────
 
 const { PaymentIntent }  = require('../domain/aggregates');
@@ -77,8 +77,11 @@ class ConfirmPaymentUseCase {
   }
 }
 
-// Refund of a confirmed payment. The Ledger removes the credits when it
-// receives CreditsRefunded.
+// Step 1 of a refund: ask for it. The Ledger decides (enough credits left?)
+// and Billing's handlers (application/handlers.js) finish the refund or put the
+// payment back to CONFIRMED. With the in-process bus the handlers have already
+// run when publish() returns, so the status returned here is the final one;
+// with a real queue it would be REFUND_REQUESTED until the answer arrives.
 class RefundPaymentUseCase {
   constructor(paymentIntentRepo, eventBus) {
     this.paymentIntentRepo = paymentIntentRepo;
@@ -89,9 +92,12 @@ class RefundPaymentUseCase {
     const intent = await this.paymentIntentRepo.findById(paymentIntentId);
     if (!intent) throw new PaymentIntentNotFoundError(paymentIntentId);
 
-    intent.refund();
+    intent.requestRefund();
 
     await saveAndPublish(intent, this.paymentIntentRepo, this.eventBus);
+
+    const current = await this.paymentIntentRepo.findById(paymentIntentId);
+    return { paymentIntentId, status: current.status };
   }
 }
 
@@ -132,6 +138,7 @@ class ListCreditPacks {
 }
 
 module.exports = {
+  saveAndPublish,
   InitiatePaymentUseCase,
   ConfirmPaymentUseCase,
   RefundPaymentUseCase,

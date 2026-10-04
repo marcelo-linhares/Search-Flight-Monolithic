@@ -21,7 +21,7 @@ const {
   OnUserRegistered,
   OnCreditsPurchased,
   OnPriceSnapshotCaptured,
-  OnCreditsRefunded,
+  OnRefundRequested,
 } = require('../../../src/ledger/application/handlers');
 
 // ── Fakes (portas em memória) ─────────────────
@@ -277,71 +277,67 @@ describe('OnPriceSnapshotCaptured', () => {
 });
 
 // ─────────────────────────────────────────────
-describe('OnCreditsRefunded', () => {
-  const refundEvent = { userId: 'u-1', credits: 50, paymentIntentId: 'pi-1' };
+describe('OnRefundRequested', () => {
+  const request = { userId: 'u-1', credits: 50, paymentIntentId: 'pi-1' };
 
-  it('remove os créditos estornados do saldo', async () => {
+  it('saldo suficiente: debita, salva e publica RefundAccepted (nessa ordem)', async () => {
     const calls = makeCalls();
     const repo = fakeLedgerRepo(calls, [ledgerWithCredits(80)]);
     const bus = fakeEventBus(calls);
 
-    await new OnCreditsRefunded(repo, bus).handle(refundEvent);
+    await new OnRefundRequested(repo, bus).handle(request);
 
     expect((await repo.findByUserId('u-1')).computeBalance().available).toBe(30);
-    expect(bus.published).toEqual([]);
-    expect(calls).toEqual(['save']);
+    expect(bus.types()).toEqual(['RefundAccepted']);
+    expect(calls).toEqual(['save', 'publish:RefundAccepted']);
   });
 
-  it('estorno que zera o saldo suspende o ledger e publica BalanceExhausted', async () => {
+  it('estorno que zera o saldo suspende o ledger e publica RefundAccepted e BalanceExhausted', async () => {
     const calls = makeCalls();
     const repo = fakeLedgerRepo(calls, [ledgerWithCredits(50)]);
     const bus = fakeEventBus(calls);
 
-    await new OnCreditsRefunded(repo, bus).handle(refundEvent);
+    await new OnRefundRequested(repo, bus).handle(request);
 
     expect((await repo.findByUserId('u-1')).status).toBe(LedgerStatus.SUSPENDED);
-    expect(bus.types()).toEqual(['BalanceExhausted']);
-    expect(calls).toEqual(['save', 'publish:BalanceExhausted']);
+    expect(bus.types()).toEqual(['RefundAccepted', 'BalanceExhausted']);
   });
 
-  it('estorno maior que o saldo: o handler propaga ConflictError e não salva nada', async () => {
+  it('saldo insuficiente: publica RefundRejected, saldo intacto, sem erro', async () => {
     const calls = makeCalls();
     const repo = fakeLedgerRepo(calls, [ledgerWithCredits(10)]);
     const bus = fakeEventBus(calls);
 
-    await expect(new OnCreditsRefunded(repo, bus).handle(refundEvent))
-      .rejects.toMatchObject({ httpStatus: 409 });
+    await expect(new OnRefundRequested(repo, bus).handle(request)).resolves.toBeUndefined();
 
     expect((await repo.findByUserId('u-1')).computeBalance().available).toBe(10);
-    expect(calls).toEqual([]);
+    expect(bus.published).toMatchObject([{ type: 'RefundRejected', reason: 'insufficient_balance' }]);
   });
 
-  it('usuário sem ledger: ignora em silêncio (sem save, sem eventos)', async () => {
+  // Sem ledger não há de onde tirar os créditos: o Billing precisa saber, senão
+  // o pagamento fica preso em REFUND_REQUESTED.
+  it('usuário sem ledger: não salva nada e publica RefundRejected (ledger_not_found)', async () => {
     const calls = makeCalls();
     const bus = fakeEventBus(calls);
 
-    await new OnCreditsRefunded(fakeLedgerRepo(calls), bus).handle(refundEvent);
+    await new OnRefundRequested(fakeLedgerRepo(calls), bus).handle(request);
 
-    expect(calls).toEqual([]);
-    expect(bus.published).toEqual([]);
+    expect(calls).toEqual(['publish:RefundRejected']);
+    expect(bus.published[0]).toMatchObject({
+      userId: 'u-1', paymentIntentId: 'pi-1', credits: 50, reason: 'ledger_not_found', available: 0,
+    });
   });
 
-  // DECISÃO DE DOMÍNIO: ao contrário de OnPriceSnapshotCaptured, aqui nem
-  // log existe. Um estorno sem ledger é inconsistência de dados; deveria
-  // pelo menos avisar (e/ou ir para dead-letter).
-  it.todo('estorno sem ledger gera aviso/log para investigação');
-});
-
-describe('OnCreditsRefunded (idempotência)', () => {
-  it('evento CreditsRefunded reentregue não estorna duas vezes', async () => {
+  it('pedido reentregue: não estorna duas vezes e reemite RefundAccepted', async () => {
     const calls = makeCalls();
     const repo = fakeLedgerRepo(calls, [ledgerWithCredits(80)]);
-    const handler = new OnCreditsRefunded(repo, fakeEventBus(calls));
-    const event = { userId: 'u-1', credits: 50, paymentIntentId: 'pi-1' };
+    const bus = fakeEventBus(calls);
+    const handler = new OnRefundRequested(repo, bus);
 
-    await handler.handle(event);
-    await handler.handle(event);
+    await handler.handle(request);
+    await handler.handle(request);
 
     expect((await repo.findByUserId('u-1')).computeBalance().available).toBe(30);
+    expect(bus.types()).toEqual(['RefundAccepted', 'RefundAccepted']);
   });
 });
