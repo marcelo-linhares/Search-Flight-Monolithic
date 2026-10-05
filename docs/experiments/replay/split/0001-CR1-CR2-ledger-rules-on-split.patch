@@ -1,0 +1,91 @@
+From 1847aed65e698e80811c24f6260f197ff28a79f2 Mon Sep 17 00:00:00 2001
+From: exp <exp@x>
+Date: Mon, 5 Oct 2026 00:05:51 +0000
+Subject: [PATCH 1/2] CR1+CR2 (ledger rules) on split
+
+---
+ apps/api/src/ledger/domain/aggregates.js      |  8 +++-
+ .../tests/unit/ledger/credit-ledger.test.js   | 37 +++++++++++++++++++
+ 2 files changed, 44 insertions(+), 1 deletion(-)
+
+diff --git a/apps/api/src/ledger/domain/aggregates.js b/apps/api/src/ledger/domain/aggregates.js
+index 95a0e14..987367f 100644
+--- a/apps/api/src/ledger/domain/aggregates.js
++++ b/apps/api/src/ledger/domain/aggregates.js
+@@ -105,6 +105,8 @@ class CreditLedger {
+   // Called when PriceSnapshotCaptured event arrives from Search.
+   // Returns false if balance was already zero (caller should not have let the search run).
+   debitForSearch({ watchRequestId, snapshotId, creditsPerSearch = 1 }) {
++    if (this.hasEntry('SEARCH_DEBIT', snapshotId)) return false;
++
+     const balance = this.computeBalance();
+     if (balance.isExhausted()) {
+       return false; // guard — Scheduler should have stopped this
+@@ -113,7 +115,7 @@ class CreditLedger {
+     this._appendEntry(new LedgerEntry({
+       type:        'SEARCH_DEBIT',
+       amount:      -creditsPerSearch,
+-      referenceId: watchRequestId,
++      referenceId: snapshotId,
+       description: `Search run for watch ${watchRequestId}`,
+     }));
+ 
+@@ -142,6 +144,10 @@ class CreditLedger {
+   creditFromRefund({ credits, paymentIntentId }) {
+     if (this.hasEntry('REFUND', paymentIntentId)) return false;
+ 
++    if (credits > this.computeBalance().available) {
++      throw new Error(`CreditLedger: refund of ${credits} credits exceeds the balance of ${this.computeBalance().available}`);
++    }
++
+     this._appendEntry(new LedgerEntry({
+       type:        'REFUND',
+       amount:      -credits,  // refund removes credits that were added
+diff --git a/apps/api/tests/unit/ledger/credit-ledger.test.js b/apps/api/tests/unit/ledger/credit-ledger.test.js
+index 11d46e7..4a8c1b2 100644
+--- a/apps/api/tests/unit/ledger/credit-ledger.test.js
++++ b/apps/api/tests/unit/ledger/credit-ledger.test.js
+@@ -205,3 +205,40 @@ describe('CreditLedger: idempotência (eventos podem ser reentregues)', () => {
+   // watchRequestId, não o snapshotId). Reentrega de PriceSnapshotCaptured debita duas vezes.
+   it.todo('debitForSearch com o mesmo snapshotId não debita duas vezes');
+ });
++
++// ── CR1 (experimento): débito idempotente por snapshot ──
++describe('CR1: débito idempotente por snapshot', () => {
++  it('mesmo snapshotId não debita duas vezes e retorna false na repetição', () => {
++    const ledger = ledgerWithCredits(5);
++    const busca = { watchRequestId: 'w-1', snapshotId: 's-1' };
++
++    expect(ledger.debitForSearch(busca)).toBe(true);
++    ledger.pullDomainEvents();
++    expect(ledger.debitForSearch(busca)).toBe(false);
++
++    expect(ledger.computeBalance().available).toBe(4);
++    expect(ledger.pullDomainEvents()).toEqual([]);
++  });
++
++  it('snapshots diferentes do mesmo watch são cobrados cada um', () => {
++    const ledger = ledgerWithCredits(5);
++
++    ledger.debitForSearch({ watchRequestId: 'w-1', snapshotId: 's-1' });
++    ledger.debitForSearch({ watchRequestId: 'w-1', snapshotId: 's-2' });
++
++    expect(ledger.computeBalance().available).toBe(3);
++  });
++});
++
++// ── CR2 (experimento): estorno maior que o saldo é recusado ──
++describe('CR2: estorno maior que o saldo é recusado', () => {
++  it('lança erro, não cria lançamento e não emite eventos', () => {
++    const ledger = ledgerWithCredits(10);
++
++    expect(() => ledger.creditFromRefund({ credits: 50, paymentIntentId: 'pi-1' })).toThrow(/exceeds/);
++
++    expect(ledger.computeBalance().available).toBe(10);
++    expect(ledger.entries).toHaveLength(1);
++    expect(ledger.pullDomainEvents()).toEqual([]);
++  });
++});
+-- 
+2.43.0
+

@@ -141,6 +141,34 @@ Faltam obviamente, implementações de login, autenticação segura entre APIs, 
 ## Entrada 7 — 2026-10-02 18h e 2026-10-03 08h30m
 
 Outra sessão bem intensa em geração de código e avaliação de testes unitários e integrados.
-Nestas últimas sessões, fizemos quebras importantes. Primeiro, os contextos ledger e billing estavam intríssecos no código. Natural, uma vez que se conectam pela sua natureza de cobrança e fluxo de caixa (entrada e saída de créditos para buscas). De toda forma, decidi separar os dois em duas pastas diferentes dentro do próprio monolito.
+Nestas últimas sessões, fizemos quebras importantes. Primeiro, os contextos `ledger` e `billing` estavam intrínssecos no código. Natural, uma vez que se conectam pela sua natureza de cobrança e fluxo de caixa (entrada e saída de créditos para buscas). De toda forma, decidi separar os dois em duas pastas diferentes dentro do próprio monolito.
 Isso deixou o código mais organizado, mais limpo, e com mais artefatos, obviamente.
 Por fim, estamos terminando a geração do contexto "search-orchestrator" e vamos partir para a refatoração, com métricas pré estabelecidas.
+
+
+---
+
+## Entrada 8 — 2026-10-03 23h, 2026-10-04 08h30m e 2026-10-04 13h00m
+
+Finalizadas as principais implementações de monólitos, gerando uma boa base de entendimento e novas funcionalidades dentro dos contextos.
+Basicamente, dos 8 contextos criados, 6 tiveram implementação de API e APPs, todos em arquitetura monolítica.
+Os contextos `Pricing` e `Notification` ficaram *mockados* por questões de infraestrutura e integração com parceiros externos.
+
+Conforme descrito nas documentações [GitHub Pages](https://marcelo-linhares.github.io/Search-Flight-Monolithic/contexts.html) é possível confirmar que os contextos estão devidamente organizados para facilitar a implementação, documentação e eventual *onboarding* de pessoas.
+
+Outro ponto que confere qualidade ao código é a cobertura de testes, com implementações TDD desde o princípio. Isso garante que o código nasça com testes unitários e testes de integração minimiamente evoluídos, podendo ser objeto de execução via esteira de build & deploy.
+
+Pontos que valem o destaque neste ponto da implementação do monólito:
+
+> **What the project has now**
+> - Billing, Ledger, Watch Management, Scheduler, Search and Integration are implemented, with a REST API and a server that runs the scheduler timer.
+> - All open domain decisions are made, and the refund is two-step.
+> - 386 tests pass with about 99% coverage, and the Pages site is ready to publish.
+
+###
+
+> **What's missing**
+> - Pricing and Notification contexts. Pricing detects a price drop from PriceSnapshotCaptured and publishes PriceDropDetected. Notification turns events into alerts for the user.
+> - Persistence. Everything is in memory, so a real database is the big missing piece.
+> - Identity and auth. Auth is still the temporary x-user-id header, and the payment webhook doesn't verify the gateway's signature.
+> - Mobile app on the real API. The mobile app still uses its mock server.

@@ -1,0 +1,3 @@
+
+# replay patches must keep LF so git am works on Windows
+*.patch -text
