@@ -170,6 +170,14 @@ bus.subscribe('CreditsPurchased', (event) => handler.handle(event));
 const { PaymentIntent } = require('../../billing/domain/aggregates');   // from src/ledger or src/search
 ```
 
+### 4.1 The Ledger as a separate process
+
+The Ledger can leave the monolith without changing any other context. `createApp({ ledgerUrl })` swaps the local Ledger for a `RemoteEventBridge` (events, at-least-once, retry, dead-letter, de-duplication by `eventId`) and a remote client (`src/ledger/client.js`) for the balance and history queries. `src/services/ledger-service.js` is a second composition root that hosts the same Ledger code with its own bus and repository.
+
+![Ledger extracted](experiments/ledger-extraction.svg)
+
+What changes across the network (consistency, duplicates, outages, 503 on reads) is catalogued with tests in [EXPERIMENT_REFACTORING.md](EXPERIMENT_REFACTORING.md). The dependency rule above is enforced by `tests/unit/architecture/dependency-rule.test.js`.
+
 ---
 
 ## 5. Client architecture (`apps/mobile`)
@@ -208,6 +216,8 @@ yarn typecheck                      # type-checks the mobile app
 yarn api:test                       # backend tests
 yarn api:coverage                   # backend tests with coverage thresholds
 yarn api:start                      # REST API on port 5050 (ENABLE_DEV_ROUTES=true adds the dev tick route)
+yarn api:ledger                     # the Ledger as its own service (see section 4.1)
+yarn api:footprint <repo> <base> <head> <ledger|billing>   # change-footprint metric
 docker build -t searchfly-api apps/api
 node apps/api/examples/billing-example.js              # Billing + Ledger lifecycle
 node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across the real contexts with a fake flight provider
@@ -244,6 +254,8 @@ node apps/api/examples/p0-credit-exhaustion-example.js  # P0 flow across the rea
 
 ## 9. Known gaps
 
-- Test coverage is about 22% to 30% (only `PaymentIntent` is tested), so `npm run test:coverage` fails its 80% / 85% thresholds until more unit tests are written.
-- There is no event bus implementation, repository implementation, HTTP server or gateway adapter in `apps/api/src` yet. The examples use a small in-process bus (`examples/_event-bus.js`) in the meantime. The Dockerfile exposes port 5050 and its `CMD` is a placeholder (`npm run`) until a start script exists.
+- Repositories are in-memory only; there is no database. Persistence behind the repository interface (for example SQLite) is future work.
+- The remote bridge keeps its outbox and its processed-event set in memory. Production needs a transactional outbox and persistent de-duplication (see EXPERIMENT_REFACTORING.md, leaks 3 and 5).
+- Authentication is a temporary `x-user-id` header; there is no real gateway adapter (the payment webhook is simulated).
+- Pricing, Notification and the real flight provider are not implemented (the Integration context ships only `FakeFlightProvider`).
 - Real push notifications need a development build; Expo Go runs the mock flow only.

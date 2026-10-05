@@ -23,6 +23,13 @@ yarn api:start                   # REST API on http://localhost:5050 (see docs/A
 docker build -t searchfly-api apps/api
 ```
 
+The Ledger can also run as its own process (thesis experiment, see [docs/EXPERIMENT_REFACTORING.md](docs/EXPERIMENT_REFACTORING.md)):
+
+```bash
+MONOLITH_URL=http://localhost:5050 INTERNAL_TOKEN=secret yarn api:ledger                 # Ledger service on :5051
+LEDGER_URL=http://localhost:5051 INTERNAL_TOKEN=secret yarn api:start                    # monolith using the remote Ledger
+```
+
 ## Requirements
 
 - Node.js 20.19.4 or newer (required by Expo SDK 56+)

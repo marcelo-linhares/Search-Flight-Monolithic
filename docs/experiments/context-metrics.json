@@ -1,0 +1,64 @@
+[
+  {
+    "context": "billing",
+    "files": 7,
+    "lines": 604,
+    "foreignContextImports": [],
+    "subscribesTo": [
+      "RefundAccepted",
+      "RefundRejected"
+    ]
+  },
+  {
+    "context": "integration",
+    "files": 2,
+    "lines": 89,
+    "foreignContextImports": [],
+    "subscribesTo": []
+  },
+  {
+    "context": "ledger",
+    "files": 8,
+    "lines": 637,
+    "foreignContextImports": [],
+    "subscribesTo": [
+      "CreditsPurchased",
+      "PriceSnapshotCaptured",
+      "RefundRequested",
+      "UserRegistered"
+    ]
+  },
+  {
+    "context": "scheduler",
+    "files": 6,
+    "lines": 319,
+    "foreignContextImports": [],
+    "subscribesTo": [
+      "WatchCancelled",
+      "WatchCreated",
+      "WatchExpired",
+      "WatchReactivated",
+      "WatchSuspendedDueToCredits"
+    ]
+  },
+  {
+    "context": "search",
+    "files": 8,
+    "lines": 393,
+    "foreignContextImports": [],
+    "subscribesTo": [
+      "SearchJobTriggered"
+    ]
+  },
+  {
+    "context": "watch",
+    "files": 8,
+    "lines": 524,
+    "foreignContextImports": [],
+    "subscribesTo": [
+      "BalanceExhausted",
+      "BalanceRestored",
+      "SearchWindowEnded"
+    ]
+  }
+]

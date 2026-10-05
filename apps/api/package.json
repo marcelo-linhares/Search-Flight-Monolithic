@@ -14,6 +14,8 @@
     "test:integration": "jest --selectProjects integration",
     "test:stage": "jest --selectProjects stage",
     "test:all": "jest",
+    "ledger-service": "node src/services/ledger-service.js",
+    "footprint": "node scripts/change-footprint.js",
     "test:coverage": "jest --selectProjects unit integration --coverage"
   },
   "keywords": [],

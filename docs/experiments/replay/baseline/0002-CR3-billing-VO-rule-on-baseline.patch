@@ -1,0 +1,54 @@
+From 987d65ecd4a3c839f3026788ccfb4b5795037f7b Mon Sep 17 00:00:00 2001
+From: exp <exp@x>
+Date: Mon, 5 Oct 2026 00:05:51 +0000
+Subject: [PATCH 2/2] CR3 (billing VO rule) on baseline
+
+---
+ apps/api/src/billing/domain/value-objects.js      |  5 +++++
+ apps/api/tests/unit/billing/value-objects.test.js | 15 +++++++++++++++
+ 2 files changed, 20 insertions(+)
+ create mode 100644 apps/api/tests/unit/billing/value-objects.test.js
+
+diff --git a/apps/api/src/billing/domain/value-objects.js b/apps/api/src/billing/domain/value-objects.js
+index a80cc0c..6b5e1ad 100644
+--- a/apps/api/src/billing/domain/value-objects.js
++++ b/apps/api/src/billing/domain/value-objects.js
+@@ -65,9 +65,14 @@ class PaymentAmountVO {
+ // Immutable record of what the payment gateway returned.
+ // Billing speaks gateway language here — translation happens in the adapter.
+ 
++const GATEWAY_STATUSES = ['succeeded', 'failed', 'pending'];
++
+ class GatewayResultVO {
+   constructor({ gatewayTransactionId, status, rawResponse = null }) {
+     if (!gatewayTransactionId) throw new Error('GatewayResultVO: gatewayTransactionId required');
++    if (!GATEWAY_STATUSES.includes(status)) {
++      throw new Error(`GatewayResultVO: status must be one of ${GATEWAY_STATUSES.join(', ')}`);
++    }
+     this.gatewayTransactionId = gatewayTransactionId;
+     this.status               = status;   // 'succeeded' | 'failed' | 'pending'
+     this.rawResponse          = rawResponse;
+diff --git a/apps/api/tests/unit/billing/value-objects.test.js b/apps/api/tests/unit/billing/value-objects.test.js
+new file mode 100644
+index 0000000..68b5961
+--- /dev/null
++++ b/apps/api/tests/unit/billing/value-objects.test.js
+@@ -0,0 +1,15 @@
++'use strict';
++
++const { GatewayResultVO } = require('../../../src/billing/domain/value-objects');
++
++// ── CR3 (experimento): GatewayResultVO rejeita status desconhecido ──
++describe('CR3: GatewayResultVO rejeita status desconhecido', () => {
++  it.each(['paid', 'SUCCEEDED', '', null, undefined])('status %p lança erro', (status) => {
++    expect(() => new GatewayResultVO({ gatewayTransactionId: 'tx-1', status }))
++      .toThrow(/status must be one of succeeded, failed, pending/);
++  });
++
++  it.each(['succeeded', 'failed', 'pending'])('status %s continua válido', (status) => {
++    expect(new GatewayResultVO({ gatewayTransactionId: 'tx-1', status }).status).toBe(status);
++  });
++});
+-- 
+2.43.0
+

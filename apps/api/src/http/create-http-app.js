@@ -25,6 +25,7 @@ function createHttpApp(app, { enableDevRoutes = false, logger = console } = {}) 
   server.use('/api/users', usersRouter(app));
   server.use('/api/payments/webhook', webhookRouter(app)); // before the authenticated /api/payments
   if (enableDevRoutes) server.use('/api/dev', devRouter(app));
+  if (app.bridge) server.use('/internal', app.bridge.router()); // events from the extracted Ledger service
 
   server.use('/api/credits',      requireUser, creditsRouter(app));
   server.use('/api/credit-packs', requireUser, packsRouter(app));
