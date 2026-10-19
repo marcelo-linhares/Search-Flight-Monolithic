@@ -163,7 +163,7 @@ Pontos que valem o destaque neste ponto da implementação do monólito:
 > **What the project has now**
 > - Billing, Ledger, Watch Management, Scheduler, Search and Integration are implemented, with a REST API and a server that runs the scheduler timer.
 > - All open domain decisions are made, and the refund is two-step.
-> - 386 tests pass with about 99% coverage, and the Pages site is ready to publish.
+> - 423 tests pass (6 todo, 34 suites) with 99.3% statement coverage (unit + integration, run on 2026-10-19), and the Pages site is published.
 
 ###
 
