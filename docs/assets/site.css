@@ -33,3 +33,5 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}th,td{t
 .src{font:11px 'JetBrains Mono',monospace;color:var(--mu);opacity:.8;margin-top:6px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:620px){.two{grid-template-columns:1fr}}
 footer{margin-top:44px;padding-top:14px;border-top:1px solid var(--bd);font-size:12px;color:var(--mu)}
+
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--bd);background:#fff;display:block;margin:10px 0}
