@@ -172,3 +172,32 @@ Pontos que valem o destaque neste ponto da implementação do monólito:
 > - Persistence. Everything is in memory, so a real database is the big missing piece.
 > - Identity and auth. Auth is still the temporary x-user-id header, and the payment webhook doesn't verify the gateway's signature.
 > - Mobile app on the real API. The mobile app still uses its mock server.
+
+---
+
+## Entrada 9 — 2026-10-04 21h
+
+Agora com a aplicação num nível mais elevado de construção e maturidade, foi possível evidenciar alguns pontos a partir dos seguintes experimentos:
+
+### Experimento A: Change Requests Solicitados
+* Duas regras de negócios (CR2 e CR3)
+* Um requisito de tecnologia (CR1 sobre idempotência)
+
+### Experimento B: Extrair o Ledger para Refatoração em MS
+* Como ele já estava devidamente separado em sua estrtura, o Claude teve facilidade para identificar e organizar o novo código.
+* Sem eventos ou ajustes cruzados necessário
+
+### Experimento C: Os Vazamentos
+Resumo: o Ledger não provocou vazamentos, os códigos estavam bem claros e fácil para letura (até para um leigo na linguagem como eu)
+Um ponto importante: exigiu refatoração de consumidores externos.
+
+Conclusão geral sobre esses úlimos experimentos:
+
+| Claim | Strength | Source |
+|-------|----------|--------|
+| Contexts are decoupled in this code base (0 cross-context imports, enforced by a test). | Strong | architecture test, `context-metrics.json` |
+| Rule changes stay inside one context and the touched file has only its own concepts. | Moderate (3 CRs, one author) | Experiment A |
+| A context can be extracted with no change to the other contexts. | Moderate (one extraction) | Experiment B |
+| Extraction changes consistency, duplicates and failure behaviour. | Strong for this case | Experiment C tests |
+| Developers perceive the structure as helpful. | Perception only (survey, n = 23) | survey, not this repository |
+| Teams are more productive / onboard faster / ship fewer bugs. | **Not provable here** | would need a team study |

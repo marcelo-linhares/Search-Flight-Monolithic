@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#0C1018"/><g transform="translate(112 112) scale(12.5)">
+  <circle cx="27" cy="27" r="21" fill="#0C1018" stroke="#A855F7" stroke-width="3"/>
+  <line x1="42.5" y1="42.5" x2="58" y2="58" stroke="#EC4899" stroke-width="6.5" stroke-linecap="round"/>
+  <g transform="translate(27 27) scale(.84) translate(-27 -30.5)">
+    <!-- swept-back wings: translucent like insect wings, shaped like jet wings -->
+    <path d="M24 23.5 L6.5 38.5 Q5.4 41 8.4 40.6 L24.5 34.2 Z" fill="#EC4899" fill-opacity=".32" stroke="#EC4899" stroke-width="1.7" stroke-linejoin="round"/>
+    <path d="M30 23.5 L47.5 38.5 Q48.6 41 45.6 40.6 L29.5 34.2 Z" fill="#EC4899" fill-opacity=".32" stroke="#EC4899" stroke-width="1.7" stroke-linejoin="round"/>
+    <!-- tail fins -->
+    <path d="M25.2 40 L19.5 45.2 Q19 46.6 20.6 46.2 L25.6 43.6 Z" fill="#EC4899" fill-opacity=".32" stroke="#EC4899" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M28.8 40 L34.5 45.2 Q35 46.6 33.4 46.2 L28.4 43.6 Z" fill="#EC4899" fill-opacity=".32" stroke="#EC4899" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- fuselage / abdomen, tapering to a tail -->
+    <path d="M27 21 C31.6 23 31.6 34 27 48 C22.4 34 22.4 23 27 21 Z" fill="#F97316"/>
+    <!-- body segments -->
+    <g stroke="#0C1018" stroke-width="1" stroke-opacity=".55" stroke-linecap="round"><path d="M24.4 31.5 H29.6"/><path d="M24.9 36.5 H29.1"/></g>
+    <!-- thorax + head (nose) -->
+    <circle cx="27" cy="23.6" r="4.3" fill="#F97316"/>
+    <circle cx="27" cy="17" r="3.5" fill="#F97316"/>
+    <!-- compound eyes -->
+    <ellipse cx="24.5" cy="16.4" rx="1.7" ry="2" fill="#EC4899"/><ellipse cx="29.5" cy="16.4" rx="1.7" ry="2" fill="#EC4899"/>
+  </g>
+</g></svg>

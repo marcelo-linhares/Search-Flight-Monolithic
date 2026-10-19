@@ -8,6 +8,10 @@ export const colors = {
   textMuted: '#8493AC',
   textTag: '#5C6D87',
   textLink: '#5C7FBF',
+  /** Brand chrome: default actions, active tab, links, focus (see brand/). Bounded-context colors stay on context-owned data. */
+  primary: '#00A3FF',
+  /** Text/icons on top of `primary`. Navy, never white (white on Sky fails contrast). */
+  onPrimary: '#0B2D5B',
   danger: '#EF4444',
 
   // BC accent palette
@@ -21,13 +25,21 @@ export const colors = {
   ledger: '#06B6D4',
 } as const
 
+/** Brand palette (see brand/): used by the logo and brand moments, not for bounded-context accents. */
+export const brand = {
+  navy: '#0B2D5B',
+  sky: '#00A3FF',
+  amber: '#FFB020',
+  offWhite: '#F8FAFC',
+} as const
+
 export type BcColor = 'watch' | 'search' | 'pricing' | 'notif' | 'billing' | 'ledger'
 
 export const fonts = {
-  ui: 'Inter_400Regular',
-  uiMedium: 'Inter_500Medium',
-  uiSemi: 'Inter_600SemiBold',
-  uiBold: 'Inter_700Bold',
+  ui: 'Montserrat_400Regular',
+  uiMedium: 'Montserrat_500Medium',
+  uiSemi: 'Montserrat_600SemiBold',
+  uiBold: 'Montserrat_700Bold',
   mono: 'JetBrainsMono_400Regular',
   monoBold: 'JetBrainsMono_700Bold',
 } as const

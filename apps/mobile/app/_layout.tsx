@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
+import { useFonts, Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold } from '@expo-google-fonts/montserrat'
 import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono'
 import { colors, fonts } from '@searchfly/ui'
 import { registerAllEvents } from '../src/bootstrap'
@@ -15,7 +15,7 @@ SplashScreen.preventAutoHideAsync()
 export default function RootLayout() {
   const router = useRouter()
   const [loaded] = useFonts({
-    Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
+    Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold,
     JetBrainsMono_400Regular, JetBrainsMono_700Bold,
   })
 
