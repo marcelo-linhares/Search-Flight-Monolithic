@@ -28,7 +28,7 @@ export function ProfileScreen({ onPrefs, onSignedOut }: { onPrefs: () => void; o
           </View>
         </Card>
       )}
-      <Button label="Sign out" accent="watch" variant="outline" onPress={() => { logout(); onSignedOut() }} />
+      <Button label="Sign out" variant="outline" onPress={() => { logout(); onSignedOut() }} />
     </Screen>
   )
 }

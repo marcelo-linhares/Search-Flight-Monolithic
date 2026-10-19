@@ -11,7 +11,7 @@
     "lint": "echo \"lint: configure eslint in packages/config\""
   },
   "dependencies": {
-    "@expo-google-fonts/inter": "^0.2.3",
+    "@expo-google-fonts/montserrat": "^0.2.3",
     "@expo-google-fonts/jetbrains-mono": "^0.2.3",
     "@expo/vector-icons": "^15.0.2",
     "@searchfly/domain-events": "*",

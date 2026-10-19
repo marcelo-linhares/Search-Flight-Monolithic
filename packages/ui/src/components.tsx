@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -65,7 +65,7 @@ export function Card({
 export function Button({
   label,
   onPress,
-  accent = 'watch',
+  accent = 'brand',
   variant = 'solid',
   loading,
   disabled,
@@ -73,13 +73,15 @@ export function Button({
 }: {
   label: string
   onPress: () => void
-  accent?: BcColor
+  /** 'brand' (default) = Sky/Navy chrome action. Pass a BcColor only for context-owned actions (Top up = ledger, Buy credits = billing). */
+  accent?: BcColor | 'brand'
   variant?: 'solid' | 'outline'
   loading?: boolean
   disabled?: boolean
   testID?: string
 }) {
-  const c = colors[accent]
+  const c = accent === 'brand' ? colors.primary : colors[accent]
+  const onSolid = accent === 'brand' ? colors.onPrimary : colors.bg
   const solid = variant === 'solid'
   return (
     <Pressable
@@ -98,9 +100,9 @@ export function Button({
       })}
     >
       {loading ? (
-        <ActivityIndicator color={solid ? colors.bg : c} />
+        <ActivityIndicator color={solid ? onSolid : c} />
       ) : (
-        <Txt variant="heading" color={solid ? colors.bg : c} style={{ fontSize: 14 }}>
+        <Txt variant="heading" color={solid ? onSolid : c} style={{ fontSize: 14 }}>
           {label}
         </Txt>
       )}
@@ -127,17 +129,26 @@ export function Tag({ label, accent }: { label: string; accent: BcColor | 'dange
   )
 }
 
-export function Field({ label, style, ...rest }: TextInputProps & { label: string }) {
+export function Field({ label, style, onFocus, onBlur, ...rest }: TextInputProps & { label: string }) {
+  const [focused, setFocused] = useState(false)
   return (
     <View style={{ gap: 6 }}>
       <Txt variant="tag">{label.toUpperCase()}</Txt>
       <TextInput
         placeholderTextColor={colors.textTag}
         {...rest}
+        onFocus={(e) => {
+          setFocused(true)
+          onFocus?.(e)
+        }}
+        onBlur={(e) => {
+          setFocused(false)
+          onBlur?.(e)
+        }}
         style={[
           {
             backgroundColor: colors.bgTag,
-            borderColor: colors.border,
+            borderColor: focused ? colors.primary : colors.border,
             borderWidth: 1,
             borderRadius: radius.md,
             color: colors.text,
